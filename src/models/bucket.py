@@ -8,21 +8,20 @@ from pydantic import BaseModel, Field
 
 class Team(BaseModel):
     """Team model representing a team."""
-    id: str = Field(description="The team unique id")
+    team_id: str = Field(alias="id", description="The team unique id")
     name: str = Field(description="The name of the team")
 
 
 class Bucket(BaseModel):
     """Bucket model representing a collection of tests."""
-    key: str = Field(description="The bucket unique id")
+    bucket_key: str = Field(alias="key", description="The bucket unique id")
     name: str = Field(description="The name of the bucket")
-    created_at: float = Field(
+    created_at: float | int = Field(
         description="The timestamp when the bucket was created (Unix timestamp)")
     default: bool = Field(
         description="Whether the bucket is the default bucket for the team")
     is_private: bool = Field(
         description="Whether the bucket is private or public")
-    team_uuid: Optional[str] = None
     tests_count: int = Field(
         default=0, description="Number of tests in the bucket")
     trigger_url: str = Field(
