@@ -46,7 +46,7 @@ class Test(BaseModel):
     - GET /buckets/{bucket_key}/tests/{test_id}/schedules
     - GET /buckets/{bucket_key}/tests/{test_id}/steps/{step_id}
     """
-    id: str = Field(
+    test_id: str = Field(alias="id",
         description="The unique identifier for the test. Also known as test_id")
     name: str = Field(description="The name of the test")
     description: Optional[str] = Field(
@@ -67,13 +67,27 @@ class Test(BaseModel):
     last_run: Optional[LastTestRun] = Field(
         default=None, description="Last test run result")
 
-
-class CreateTest(BaseModel):
-    """Model for creating a new API Test."""
-    name: str = Field(description="The name of the test to be created")
-    description: Optional[str] = Field(
-        default=None, description="The description of the test to be created")
+    class Config:
+        extra = "ignore"
 
 
-class UpdateTest(BaseModel):
-    pass
+class TestSchedules(BaseModel):
+    """Model for test schedules"""
+    schedule_id: str = Field(alias="id", description="The unique identifier for the schedule. Also known as schedule_id")
+    description: Optional[str] = Field(alias="note",
+        default=None, description="The description of the schedule")
+    interval: str = Field(
+        description="The interval at which the test is scheduled to run. possible values are 1m, 5m, 1h, 6h etc. where m represents minutes and h represents hours")
+    environment_id: str = Field(description="The unique identifier for the environment which this test schedule should be using during the test run")
+
+    class Config:
+        extra = "ignore"
+
+
+class TestEnvironments(BaseModel):
+    """Model for test environments"""
+    environment_id: str = Field(alias="id", description="The unique identifier for the environment. Also known as environment_id")
+    name: str = Field(description="The name of the environment")
+
+    class Config:
+        extra = "ignore"
