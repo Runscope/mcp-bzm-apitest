@@ -1,8 +1,24 @@
-from mcp.server.fastmcp import FastMCP
+from src.tools.test_manager import register as register_test_manager
+# from tools.project_manager import register as register_project_manager
+# from tools.workspace_manager import register as register_workspace_manager
+# from tools.test_manager import register as register_test_manager
+# from tools.execution_manager import register as register_execution_manager
+# from tools.account_manager import register as register_account_manager
+from src.config.token import BzmApimToken
+from typing import Optional
 
-def load_tools(mcp: FastMCP) -> None:
-	"""Load all tool handlers into the FastMCP server."""
-	from src.tools.teams import handle_team_tool
-	from src.tools.buckets import handle_bucket_tool
-	from src.tools.tests import handle_test_tool
-	from src.tools.results import handle_result_tool
+
+def register_tools(mcp, token: Optional[BzmApimToken]):
+	"""
+	Register all available tools with the MCP server.
+
+	Args:
+		mcp: The MCP server instance
+		token: Optional BlazeMeter APIm token (can be None if not configured)
+	"""
+	# register_user_manager(mcp, token)
+	# register_project_manager(mcp, token)
+	# register_workspace_manager(mcp, token)
+	register_test_manager(mcp, token)
+	# register_execution_manager(mcp, token)
+	# register_account_manager(mcp, token)
