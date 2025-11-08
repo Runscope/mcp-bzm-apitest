@@ -41,7 +41,8 @@ class TeamManager:
 			self.token,
 			"GET",
 			f"{ACCOUNTS_ENDPOINT}",
-			result_formatter=format_accounts
+			result_formatter=format_accounts,
+			params={"include_owner": True}
 		)
 
 	async def get_team_users(self, team_id: str) -> BaseResult:

@@ -71,19 +71,6 @@ class Test(BaseModel):
         extra = "ignore"
 
 
-class TestSchedules(BaseModel):
-    """Model for test schedules"""
-    schedule_id: str = Field(alias="id", description="The unique identifier for the schedule. Also known as schedule_id")
-    description: Optional[str] = Field(alias="note",
-        default=None, description="The description of the schedule")
-    interval: str = Field(
-        description="The interval at which the test is scheduled to run. possible values are 1m, 5m, 1h, 6h etc. where m represents minutes and h represents hours")
-    environment_id: str = Field(description="The unique identifier for the environment which this test schedule should be using during the test run")
-
-    class Config:
-        extra = "ignore"
-
-
 class TestEnvironments(BaseModel):
     """Model for test environments"""
     environment_id: str = Field(alias="id", description="The unique identifier for the environment. Also known as environment_id")

@@ -1,6 +1,6 @@
 from typing import List, Any, Optional
 
-from src.models.test import Test, TestSchedules, TestEnvironments
+from src.models.test import Test, TestEnvironments
 
 
 def format_tests(tests: List[Any], params: Optional[dict] = None) -> List[Test]:
@@ -10,12 +10,6 @@ def format_tests(tests: List[Any], params: Optional[dict] = None) -> List[Test]:
             Test(**test)
         )
     return formatted_tests
-
-def format_test_scehdules(schedules: List[Any], params: Optional[dict] = None) -> List[Any]:
-    formatted_schedules = []
-    for schedule in schedules:
-        formatted_schedules.append(TestSchedules(**schedule))
-    return formatted_schedules
 
 def format_test_environments(environments: List[Any], params: Optional[dict] = None) -> List[Any]:
     formatted_environments = []

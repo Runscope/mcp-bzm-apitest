@@ -5,4 +5,4 @@ ACCOUNTS_ENDPOINT: str = "/account"
 TEAMS_ENDPOINT: str = "/teams"
 BUCKETS_ENDPOINT: str = "/buckets"
 TESTS_ENDPOINT: str = "/buckets/{}/tests"
-
+SCHEDULES_ENDPOINT: str = "/buckets/{}/tests/{}/schedules"

@@ -72,12 +72,12 @@ def run(log_level: str = "CRITICAL"):
     General rules:
         - If you have the information needed to call a tool action with its arguments, do so.
         - Read action always get more information about a particular item than the list action, list only display minimal information.
-        - Read the current user information at startup to learn the username, default account, workspace and project, and other important information.
+        - Invoke the 'list' action on teams tools to get a list of all the teams current user has access to. This should be the first action to perform as all further actions depend on teams.
         - Dependencies:
-            accounts: It doesn't depend on anyone. In user you can access which is the default account, and in the list of accounts, you can see the accounts available to the user.
-            workspaces: Workspaces belong to a particular account.
-            projects: Projects belong to a particular workspace.
-            tests: Tests belong to a particular project.
+            teams: It doesn't depend on anyone. A user can be part of multiple teams.
+            buckets: Buckets belong to a particular team. Each team has a default bucket which can be identified by 'default': bool property in the bucket object.
+            tests: Tests belong to a particular bucket.
+            schedules: Schedules belong to a particular test.
             executions: Executions belong to a particular test.
     """
     mcp = FastMCP("blazemeter-apim-mcp", instructions=instructions,
