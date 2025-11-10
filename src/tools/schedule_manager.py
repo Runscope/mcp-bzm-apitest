@@ -12,6 +12,7 @@ from mcp.server.fastmcp import Context
 from src.config.token import BzmApimToken
 from src.config.defaults import TOOLS_PREFIX, SCHEDULES_ENDPOINT
 from src.models import BaseResult
+from src.models.schedule import CreateSchedule
 from src.formatters.schedule import format_schedules
 from src.common.api_client import api_request
 
@@ -49,11 +50,13 @@ class ScheduleManager:
         # if project_result.error:
         #     return project_result
 
-        body = {
-            "environment_id": environment_id,
-            "note": f"Schedule created via MCP tool",
-            "interval": interval
-        }
+        # Validate input using the Pydantic model
+        schedule_data = CreateSchedule(
+            environment_id=environment_id,
+            interval=interval,
+            note="Schedule created via MCP tool"
+        )
+        body = schedule_data.model_dump(by_alias=True, exclude_none=True)
 
         return await api_request(
             self.token,
@@ -85,7 +88,7 @@ def register(mcp, token: Optional[BzmApimToken]):
                 schedule_id (str): The required parameter. The id of the schedule to read.
         - create: Create a new schedule for the test. 
             args(dict): Dictionary with the following required parameters:
-                bucket_name (str): The required parameter. The id of the bucket where the test resides.
+                bucket_key (str): The required parameter. The id of the bucket where the test resides.
                 test_id (str): The required parameter. The id of the test where the schedule resides.
                 environment_id (str): The required parameter. The id of the environment to associate with the schedule.
                 interval (str): The required parameter. The interval at which the schedule should run

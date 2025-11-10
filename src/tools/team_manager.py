@@ -61,7 +61,7 @@ def register(mcp, token: Optional[BzmApimToken]):
         Operations on teams. A user can be part of multiple teams, and each team can have multiple buckets
         and buckets can have multiple tests.
         Actions:
-        - list: List all the teams user is part of. User is determined from the provided API token.
+        - list: List all the teams user is part of. User is determined from the provided API token. 
             args(dict): '{}' empty dictionary as no arguments are required.
         - get_team_users: List all users in a specific team.
             args(dict): Dictionary with the following required parameters:

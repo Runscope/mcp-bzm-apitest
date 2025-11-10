@@ -70,11 +70,12 @@ def run(log_level: str = "CRITICAL"):
     allowing intelligent automation of complex API monitoring tasks.
 
     General rules:
+        - Invoke the 'list' action on teams tools to get a list of all the teams current user has access to. This should be the first action to perform as all further actions depend on teams.
+        - You can use list_buckets to get all buckets the user has access to. Each bucket object contains the team_id it belongs to. You do not need to call list_teams first unless you explicitly need team metadata.
         - If you have the information needed to call a tool action with its arguments, do so.
         - Read action always get more information about a particular item than the list action, list only display minimal information.
-        - Invoke the 'list' action on teams tools to get a list of all the teams current user has access to. This should be the first action to perform as all further actions depend on teams.
         - Dependencies:
-            teams: It doesn't depend on anyone. A user can be part of multiple teams.
+            teams: It doesn't depend on anyone. A user can be part of multiple teams. 
             buckets: Buckets belong to a particular team. Each team has a default bucket which can be identified by 'default': bool property in the bucket object.
             tests: Tests belong to a particular bucket.
             schedules: Schedules belong to a particular test.
