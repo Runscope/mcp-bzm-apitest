@@ -34,7 +34,7 @@ env/
 *~
 
 # Environment variables
-.env
+*.env
 .env.local
 
 # OS

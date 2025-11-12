@@ -54,6 +54,8 @@ async def api_request(token: Optional[BzmApimToken], method: str, endpoint: str,
             if not isinstance(result, list):  # Generalize result always as a list
                 result = [result]
                 default_total = 1
+            elif "total" not in response_dict:
+                default_total = len(result)
             final_result = result_formatter(result, result_formatter_params) if result_formatter else result
             return BaseResult(
                 result=final_result,
@@ -63,8 +65,12 @@ async def api_request(token: Optional[BzmApimToken], method: str, endpoint: str,
                         response_dict.get("skip", 0) + response_dict.get("limit", 0)) > 0
             )
         except httpx.HTTPStatusError as e:
-            if e.response.status_code in [401, 403]:
+            if e.response.status_code == 403:
                 return BaseResult(
                     error="Invalid credentials"
+                )
+            elif e.response.status_code == 401:
+                return BaseResult(
+                    error="Unauthorized to perform this action"
                 )
             raise

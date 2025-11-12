@@ -7,7 +7,7 @@ def format_teams(teams: List[Any], params: Optional[dict] = None) -> List[Team]:
     formatted_teams = []
     for team in teams:
         formatted_teams.append(
-            Team(**team)
+            Team(**team).model_dump(by_alias=False)
         )
     return formatted_teams
 
@@ -15,7 +15,7 @@ def format_accounts(accounts: List[Any], params: Optional[dict] = None) -> List[
 	formatted_accounts = []
 	for account in accounts:
 		formatted_accounts.append(
-			Account(**account)
+			Account(**account).model_dump(by_alias=False)
 		)
 	return formatted_accounts
 
@@ -23,6 +23,6 @@ def format_team_users(users: List[Any], params: Optional[dict] = None) -> List[T
 	formatted_users = []
 	for user in users:
 		formatted_users.append(
-			TeamUsers(**user)
+			TeamUsers(**user).model_dump(by_alias=False)
 		)
 	return formatted_users

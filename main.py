@@ -11,7 +11,7 @@ from src.config.token import BzmApimToken, BzmApimTokenError
 from src.config.version import __version__, __executable__
 from src.server import register_tools
 
-BLAZEMETER_APIM_KEY_FILE_PATH = os.getenv('BZM_APIM_TOKEN')
+BLAZEMETER_APIM_KEY_FILE_PATH = os.getenv('BZM_APIM_TOKEN_FILE')
 
 LOG_LEVELS = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
@@ -20,6 +20,8 @@ def init_logging(level_name: str) -> None:
     level = getattr(logging, level_name.upper(), logging.CRITICAL)
     logging.basicConfig(
         level=level,
+        #filename="/Users/pjain/Documents/mcp-bzm-apim.log",
+        #filemode="a",
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         stream=sys.stdout,
         force=True,
@@ -28,25 +30,28 @@ def init_logging(level_name: str) -> None:
 
 def get_api_token():
     global BLAZEMETER_APIM_KEY_FILE_PATH
-    # print("**************")
-    # print(f"BLAZEMETER_APIM_KEY_FILE_PATH: {BLAZEMETER_APIM_KEY_FILE_PATH}")
+
     # Verify if running inside Docker container
     is_docker = os.getenv('MCP_DOCKER', 'false').lower() == 'true'
     token = None
 
-    local_api_key_file = os.path.join(
-        os.path.dirname(__executable__), "bzm_apim_token.json")
-
-    if BLAZEMETER_APIM_KEY_FILE_PATH:
-        token = BLAZEMETER_APIM_KEY_FILE_PATH.strip()
+    # Option1: If token is provided directly in the mcp.json file
+    if os.getenv('BZM_APIM_TOKEN'):
+        token = BzmApimToken(os.getenv('BZM_APIM_TOKEN')).token
         return token
+
+    # Option2: Token is provided in the .env file
+    # 2.a - User sets BZM_APIM_TOKEN_FILE environment variable to point to the file location
+    # 2.b - If not set, we look for the file in the same location as the executable
+    local_api_key_file = os.path.join(
+        os.path.dirname(__executable__), "bzm_apim_token.env")
 
     if not BLAZEMETER_APIM_KEY_FILE_PATH and os.path.exists(local_api_key_file):
         BLAZEMETER_APIM_KEY_FILE_PATH = local_api_key_file
 
     if BLAZEMETER_APIM_KEY_FILE_PATH:
         try:
-            token = BzmApimToken.from_file(BLAZEMETER_APIM_KEY_FILE_PATH)
+            token = BzmApimToken.from_file(BLAZEMETER_APIM_KEY_FILE_PATH).token
         except BzmApimTokenError:
             # Token file exists but is invalid - this will be handled by individual tools
             pass

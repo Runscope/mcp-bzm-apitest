@@ -7,6 +7,6 @@ def format_buckets(buckets: List[Any], params: Optional[dict] = None) -> List[Bu
     formatted_buckets = []
     for bucket in buckets:
         formatted_buckets.append(
-            Bucket(**bucket)
+            Bucket(**bucket).model_dump(by_alias=False)
         )
     return formatted_buckets

@@ -7,6 +7,6 @@ def format_schedules(schedules: List[Any], params: Optional[dict] = None) -> Lis
 	formatted_schedules = []
 	for schedule in schedules:
 		formatted_schedules.append(
-			Schedule(**schedule)
+			Schedule(**schedule).model_dump(by_alias=False)
 		)
 	return formatted_schedules
