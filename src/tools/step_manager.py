@@ -33,15 +33,6 @@ class StepManager:
             result_formatter=format_steps
         )
         return step_result
-        # if test_result.error:
-        #     return test_result
-        # else:
-        #     # Check if it's valid or allowed
-        #     project_result = await bridge.read_project(self.token, self.ctx, test_result.result[0].project_id)
-        #     if project_result.error:
-        #         return project_result
-        #     else:
-        #         return test_result
 
 
 def register(mcp, token: Optional[BzmApimToken]):
@@ -63,7 +54,7 @@ def register(mcp, token: Optional[BzmApimToken]):
             match action:
                 case "read":
                     return await step_manager.read(args["bucket_key"], args["test_id"],
-                                                       args["step_id"])
+                                                   args["step_id"])
                 case _:
                     return BaseResult(
                         error=f"Action {action} not found in steps manager tool"
@@ -75,6 +66,6 @@ def register(mcp, token: Optional[BzmApimToken]):
         except Exception:
             return BaseResult(
                 error=f"""Error: {traceback.format_exc()}
-                          If you think this is a bug, please contact BlazeMeter support or report issue at https://github.com/BlazeMeter/bzm-mcp/issues"""
-                )
-
+                          If you think this is a bug, please contact BlazeMeter support or report issue at
+                           https://github.com/BlazeMeter/bzm-mcp/issues"""
+            )

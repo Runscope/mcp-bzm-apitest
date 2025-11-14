@@ -30,7 +30,8 @@ class BzmApimToken:
             load_dotenv(dotenv_path=p)
             token_val = os.getenv("BZM_APIM_TOKEN")
         except Exception as e:
-            raise BzmApimTokenError(f"Error reading/parsing Token from {p!r}: {e}") from e
+            raise BzmApimTokenError(
+                f"Error reading/parsing Token from {p!r}: {e}") from e
 
         return cls(token=token_val)
 

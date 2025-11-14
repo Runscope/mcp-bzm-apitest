@@ -21,71 +21,74 @@ logger = logging.getLogger(__name__)
 
 class TeamManager:
 
-	def __init__(self, token: Optional[BzmApimToken], ctx: Context):
-		self.token = token
-		self.ctx = ctx
+    def __init__(self, token: Optional[BzmApimToken], ctx: Context):
+        self.token = token
+        self.ctx = ctx
 
-	async def list(self) -> BaseResult:
-		# if control_ai_consent:
-		#     # Check if it's valid or allowed
-		#     project_result = await bridge.read_project(self.token, self.ctx, project_id)
-		#     if project_result.error:
-		#         return project_result
+    async def list(self) -> BaseResult:
+        return await api_request(
+            self.token,
+            "GET",
+            f"{ACCOUNTS_ENDPOINT}",
+            result_formatter=format_accounts,
+            params={"include_owner": True}
+        )
 
-		# parameters = {
-		#     "count": limit,
-		#     "offset": offset
-		# }
+    async def read(self, team_id: str) -> BaseResult:
+        return await api_request(
+            self.token,
+            "GET",
+            f"{TEAMS_ENDPOINT}/{team_id}",
+            result_formatter=format_teams
+        )
 
-		return await api_request(
-			self.token,
-			"GET",
-			f"{ACCOUNTS_ENDPOINT}",
-			result_formatter=format_accounts,
-			params={"include_owner": True}
-		)
-
-	async def get_team_users(self, team_id: str) -> BaseResult:
-		return await api_request(
-			self.token,
-			"GET",
-			f"{TEAMS_ENDPOINT}/{team_id}/people",
-			result_formatter=format_team_users
-		)
+    async def get_team_users(self, team_id: str) -> BaseResult:
+        return await api_request(
+            self.token,
+            "GET",
+            f"{TEAMS_ENDPOINT}/{team_id}/people",
+            result_formatter=format_team_users
+        )
 
 
 def register(mcp, token: Optional[BzmApimToken]):
-	@mcp.tool(
-		name=f"{TOOLS_PREFIX}_teams",
-		description="""
+    @mcp.tool(
+        name=f"{TOOLS_PREFIX}_teams",
+        description="""
         Operations on teams. A user can be part of multiple teams, and each team can have multiple buckets
         and buckets can have multiple tests.
         Actions:
-        - list: List all the teams user is part of. User is determined from the provided API token. 
+        - list: List all the teams user is part of. User is determined from the provided API token.
             args(dict): '{}' empty dictionary as no arguments are required.
+        - read: Read a team. Get details of a specific team.
+            args(dict): Dictionary with the following required parameters:
+                - team_id (str): The ID of the team to get details for.
         - get_team_users: List all users in a specific team.
             args(dict): Dictionary with the following required parameters:
                 - team_id (str): The ID of the team to get users for.
         """
-	)
-	async def teams(action: str, args: Dict[str, Any], ctx: Context) -> BaseResult:
-		team_manager = TeamManager(token, ctx)
-		try:
-			match action:
-				case "list":
-					return await team_manager.list()
-				case "get_team_users":
-					return await team_manager.get_team_users(args["team_id"])
-				case _:
-					return BaseResult(
-						error=f"Action {action} not found in teams manager tool"
-					)
-		except httpx.HTTPStatusError:
-			return BaseResult(
-				error=f"HTTP Error: {traceback.format_exc()}"
-			)
-		except Exception:
-			return BaseResult(
-				error=f"""Error: {traceback.format_exc()}
-                          If you think this is a bug, please contact BlazeMeter support or report issue at https://github.com/BlazeMeter/bzm-mcp/issues"""
-			)
+    )
+    async def teams(action: str, args: Dict[str, Any], ctx: Context) -> BaseResult:
+        team_manager = TeamManager(token, ctx)
+        try:
+            match action:
+                case "list":
+                    return await team_manager.list()
+                case "read":
+                    return await team_manager.read(args["team_id"])
+                case "get_team_users":
+                    return await team_manager.get_team_users(args["team_id"])
+                case _:
+                    return BaseResult(
+                        error=f"Action {action} not found in teams manager tool"
+                    )
+        except httpx.HTTPStatusError:
+            return BaseResult(
+                error=f"HTTP Error: {traceback.format_exc()}"
+            )
+        except Exception:
+            return BaseResult(
+                error=f"""Error: {traceback.format_exc()}
+                          If you think this is a bug, please contact BlazeMeter support or report issue at
+                           https://github.com/BlazeMeter/bzm-mcp/issues"""
+            )

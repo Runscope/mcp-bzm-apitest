@@ -9,16 +9,16 @@ from typing import Optional
 
 
 def register_tools(mcp, token: Optional[BzmApimToken]):
-	"""
-	Register all available tools with the MCP server.
+    """
+    Register all available tools with the MCP server.
 
-	Args:
-		mcp: The MCP server instance
-		token: Optional BlazeMeter APIM token (can be None if not configured)
-	"""
-	register_result_manager(mcp, token)
-	register_team_manager(mcp, token)
-	register_bucket_manager(mcp, token)
-	register_test_manager(mcp, token)
-	register_schedule_manager(mcp, token)
-	register_step_manager(mcp, token)
+    Args:
+            mcp: The MCP server instance
+            token: Optional BlazeMeter APIM token (can be None if not configured)
+    """
+    register_result_manager(mcp, token)
+    register_team_manager(mcp, token)
+    register_bucket_manager(mcp, token)
+    register_test_manager(mcp, token)
+    register_schedule_manager(mcp, token)
+    register_step_manager(mcp, token)

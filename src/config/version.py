@@ -19,7 +19,8 @@ def get_executable():
         return sys.executable
     else:
         # Go up from src/config/version.py to project root, then to main.py
-        return os.path.join(os.path.abspath(Path(__file__).parent.parent.parent), "main.py")
+        return os.path.join(os.path.abspath(
+            Path(__file__).parent.parent.parent), "main.py")
 
 
 __version__ = get_version()

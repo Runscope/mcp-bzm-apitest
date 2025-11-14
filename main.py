@@ -20,8 +20,6 @@ def init_logging(level_name: str) -> None:
     level = getattr(logging, level_name.upper(), logging.CRITICAL)
     logging.basicConfig(
         level=level,
-        #filename="/Users/pjain/Documents/mcp-bzm-apim.log",
-        #filemode="a",
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         stream=sys.stdout,
         force=True,
@@ -80,7 +78,7 @@ def run(log_level: str = "CRITICAL"):
         - If you have the information needed to call a tool action with its arguments, do so.
         - Read action always get more information about a particular item than the list action, list only display minimal information.
         - Dependencies:
-            teams: It doesn't depend on anyone. A user can be part of multiple teams. 
+            teams: It doesn't depend on anyone. A user can be part of multiple teams.
             buckets: Buckets belong to a particular team. Each team has a default bucket which can be identified by 'default': bool property in the bucket object.
             tests: Tests belong to a particular bucket.
             schedules: Schedules belong to a particular test.
@@ -123,10 +121,10 @@ def main():
 
         logo_ascii = (
             "  ____  _                __  __      _            \n"
-            " | __ )| | __ _ _______ |  \/  | ___| |_ ___ _ __ \n"
-            " |  _ \| |/ _` |_  / _ \| .  . |/ _ \ __/ _ \ '__|\n"
-            " | |_) | | (_| |/ /  __/| |\/| |  __/ ||  __/ |   \n"
-            " |____/|_|\__,_/___\___||_|  |_|\___|\__\___|_|   \n"
+            " | __ )| | __ _ _______ |  \\/  | ___| |_ ___ _ __ \n"
+            " |  _ \\| |/ _` |_  / _ \\| .  . |/ _ \\ __/ _ \\ '__|\n"
+            " | |_) | | (_| |/ /  __/| |\\/| |  __/ ||  __/ |   \n"
+            " |____/|_|\\__,_/___\\___||_|  |_|\\___|\\__\\___|_|   \n"
             "                                                    \n"
             f" BlazeMeter APIM MCP Server v{__version__} \n"
         )
@@ -150,7 +148,8 @@ def main():
             print(" [X] BlazeMeter APIM token not configured.")
             print(" ")
             print(
-                " Copy the BlazeMeter APIM Token file (bzm_apim_token.json) to the same location of this executable.")
+                " Copy the BlazeMeter APIM Token file (bzm_apim_token.json) to the same location of this"
+                " executable.")
             print(" ")
             print(" How to obtain the bzm_apim_token file:")
             print(" https://help.blazemeter.com/docs/guide/api-blazemeter-api-keys.html")

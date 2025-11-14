@@ -1,7 +1,6 @@
 """
 Bucket models for BlazeMeter API Monitoring
 """
-
 from typing import Optional, Dict
 from pydantic import BaseModel, Field
 
@@ -22,7 +21,8 @@ class Bucket(BaseModel):
         description="Whether the bucket is the default bucket for the team")
     is_private: bool = Field(
         description="Whether the bucket is private or public")
-    tests_count: Optional[int] = Field(default=None, description="Number of tests in the bucket")
+    tests_count: Optional[int] = Field(
+        default=None, description="Number of tests in the bucket")
     trigger_url: str = Field(
         description="The URL to start the bucket-level test runs via API")
     team: Optional[Team] = Field(description="The team this bucket belongs to")

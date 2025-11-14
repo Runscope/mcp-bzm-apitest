@@ -34,22 +34,8 @@ class TestManager:
             result_formatter=format_tests
         )
         return test_result
-        # if test_result.error:
-        #     return test_result
-        # else:
-        #     # Check if it's valid or allowed
-        #     project_result = await bridge.read_project(self.token, self.ctx, test_result.result[0].project_id)
-        #     if project_result.error:
-        #         return project_result
-        #     else:
-        #         return test_result
 
     async def create(self, test_name: str, bucket_key: int) -> BaseResult:
-        # Check if it's valid or allowed
-        # project_result = await bridge.read_project(self.token, self.ctx, project_id)
-        # if project_result.error:
-        #     return project_result
-
         test_body = {
             "name": test_name,
             "description": f"Test {test_name} created via MCP tool"
@@ -63,12 +49,6 @@ class TestManager:
         )
 
     async def list(self, bucket_key: str, limit: int, offset: int) -> BaseResult:
-        # if control_ai_consent:
-        #     # Check if it's valid or allowed
-        #     project_result = await bridge.read_project(self.token, self.ctx, project_id)
-        #     if project_result.error:
-        #         return project_result
-
         parameters = {
             "count": limit,
             "offset": offset
@@ -106,7 +86,7 @@ def register(mcp, token: Optional[BzmApimToken]):
             args(dict): Dictionary with the following required parameters:
                 test_name (str): The required name of the test to create.
                 bucket_key (str): The key of the bucket where the test will be created.
-        - list: List all tests. 
+        - list: List all tests.
             args(dict): Dictionary with the following required parameters:
                 bucket_key (str): The key of the bucket to list tests from.
                 limit (int, default=10, valid=[1 to 50]): The number of tests to list.
@@ -141,5 +121,6 @@ def register(mcp, token: Optional[BzmApimToken]):
         except Exception:
             return BaseResult(
                 error=f"""Error: {traceback.format_exc()}
-                          If you think this is a bug, please contact BlazeMeter support or report issue at https://github.com/BlazeMeter/bzm-mcp/issues"""
-                )
+                          If you think this is a bug, please contact BlazeMeter support or report issue at 
+                          https://github.com/BlazeMeter/bzm-mcp/issues"""
+            )

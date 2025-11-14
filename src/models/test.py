@@ -1,7 +1,6 @@
 """
 Test models for BlazeMeter API Monitoring
 """
-
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 
@@ -47,7 +46,7 @@ class Test(BaseModel):
     - GET /buckets/{bucket_key}/tests/{test_id}/steps/{step_id}
     """
     test_id: str = Field(alias="id",
-        description="The unique identifier for the test. Also known as test_id")
+                         description="The unique identifier for the test. Also known as test_id")
     name: str = Field(description="The name of the test")
     description: Optional[str] = Field(
         default=None, description="The description of the test")
@@ -73,7 +72,8 @@ class Test(BaseModel):
 
 class TestEnvironments(BaseModel):
     """Model for test environments"""
-    environment_id: str = Field(alias="id", description="The unique identifier for the environment. Also known as environment_id")
+    environment_id: str = Field(
+        alias="id", description="The unique identifier for the environment. Also known as environment_id")
     name: str = Field(description="The name of the environment")
 
     class Config:

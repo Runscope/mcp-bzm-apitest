@@ -34,22 +34,8 @@ class BucketManager:
             result_formatter=format_buckets
         )
         return bucket_result
-        # if test_result.error:
-        #     return test_result
-        # else:
-        #     # Check if it's valid or allowed
-        #     project_result = await bridge.read_project(self.token, self.ctx, test_result.result[0].project_id)
-        #     if project_result.error:
-        #         return project_result
-        #     else:
-        #         return test_result
 
     async def create(self, bucket_name: str, team_id: int) -> BaseResult:
-        # Check if it's valid or allowed
-        # project_result = await bridge.read_project(self.token, self.ctx, project_id)
-        # if project_result.error:
-        #     return project_result
-
         parameters = {
             "name": bucket_name,
             "team_uuid": team_id
@@ -63,17 +49,6 @@ class BucketManager:
         )
 
     async def list(self) -> BaseResult:
-        # if control_ai_consent:
-        #     # Check if it's valid or allowed
-        #     project_result = await bridge.read_project(self.token, self.ctx, project_id)
-        #     if project_result.error:
-        #         return project_result
-
-        # parameters = {
-        #     "count": limit,
-        #     "offset": offset
-        # }
-
         return await api_request(
             self.token,
             "GET",
@@ -86,18 +61,18 @@ def register(mcp, token: Optional[BzmApimToken]):
     @mcp.tool(
         name=f"{TOOLS_PREFIX}_buckets",
         description="""
-        Operations on buckets. These buckets reside within teams which is represented by team_id and 
+        Operations on buckets. These buckets reside within teams which is represented by team_id and
         contains tests represented by test_id.
         Actions:
         - read: Read a bucket. Get the detailed information of a bucket.
             args(dict): Dictionary with the following required parameters:
                 bucket_key(str): The required parameter. The id of the bucket to read.
-        - create: Create a new bucket. This will create a empty bucket to which new tests can be added by 
+        - create: Create a new bucket. This will create a empty bucket to which new tests can be added by
         creating them in this bucket.
             args(dict): Dictionary with the following required parameters:
                 bucket_name (str): The required name of the bucket to create.
                 team_id (str): The id of the team where this bucket will be created.
-        - list: List all the buckets user has access to. 
+        - list: List all the buckets user has access to.
             args(dict): '{}' empty dictionary as no arguments are required.
         """
     )
@@ -122,6 +97,6 @@ def register(mcp, token: Optional[BzmApimToken]):
         except Exception:
             return BaseResult(
                 error=f"""Error: {traceback.format_exc()}
-                          If you think this is a bug, please contact BlazeMeter support or report issue at https://github.com/BlazeMeter/bzm-mcp/issues"""
-                )
-
+                          If you think this is a bug, please contact BlazeMeter support or report issue at 
+                          https://github.com/BlazeMeter/bzm-mcp/issues"""
+            )

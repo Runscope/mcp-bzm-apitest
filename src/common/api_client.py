@@ -14,11 +14,12 @@ from src.models import BaseResult
 
 
 so = platform.system()       # "Windows", "Linux", "Darwin"
-version = platform.version() # kernel / build version
-release = platform.release() # ex. "10", "5.15.0-76-generic"
-machine = platform.machine() # ex. "x86_64", "AMD64", "arm64"
+version = platform.version()  # kernel / build version
+release = platform.release()  # ex. "10", "5.15.0-76-generic"
+machine = platform.machine()  # ex. "x86_64", "AMD64", "arm64"
 
 ua_part = f"{so} {release}; {machine}"
+
 
 async def api_request(token: Optional[BzmApimToken], method: str, endpoint: str,
                       result_formatter: Callable = None,
@@ -30,8 +31,8 @@ async def api_request(token: Optional[BzmApimToken], method: str, endpoint: str,
     """
     if not token:
         return BaseResult(
-            error="No API token. Set BZM_APIM_TOKEN env var with file path or BZM_APIM_TOKEN secrets in docker catalog configuration."
-        )
+            error="No API token. Set BZM_APIM_TOKEN env var with the token or BZM_APIM_TOKEN_FILE with "
+                  "the file path or BZM_APIM_TOKEN secrets in docker catalog configuration.")
 
     headers = kwargs.pop("headers", {})
     headers["Authorization"] = f"Bearer {token}"
@@ -51,18 +52,20 @@ async def api_request(token: Optional[BzmApimToken], method: str, endpoint: str,
             response_dict = resp.json()
             result = response_dict.get("data", [])
             default_total = 0
-            if not isinstance(result, list):  # Generalize result always as a list
+            if not isinstance(
+                    result, list):  # Generalize result always as a list
                 result = [result]
                 default_total = 1
             elif "total" not in response_dict:
                 default_total = len(result)
-            final_result = result_formatter(result, result_formatter_params) if result_formatter else result
+            final_result = result_formatter(
+                result, result_formatter_params) if result_formatter else result
             return BaseResult(
                 result=final_result,
                 error=response_dict.get("error", None),
                 total=response_dict.get("total", default_total),
                 has_more=response_dict.get("total", 0) - (
-                        response_dict.get("skip", 0) + response_dict.get("limit", 0)) > 0
+                    response_dict.get("skip", 0) + response_dict.get("limit", 0)) > 0
             )
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 403:

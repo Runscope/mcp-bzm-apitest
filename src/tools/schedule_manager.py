@@ -34,22 +34,8 @@ class ScheduleManager:
             result_formatter=format_schedules
         )
         return schedule_result
-        # if test_result.error:
-        #     return test_result
-        # else:
-        #     # Check if it's valid or allowed
-        #     project_result = await bridge.read_project(self.token, self.ctx, test_result.result[0].project_id)
-        #     if project_result.error:
-        #         return project_result
-        #     else:
-        #         return test_result
 
     async def create(self, bucket_key: str, test_id: str, environment_id: str, interval: str) -> BaseResult:
-        # Check if it's valid or allowed
-        # project_result = await bridge.read_project(self.token, self.ctx, project_id)
-        # if project_result.error:
-        #     return project_result
-
         # Validate input using the Pydantic model
         schedule_data = CreateSchedule(
             environment_id=environment_id,
@@ -86,11 +72,12 @@ def register(mcp, token: Optional[BzmApimToken]):
                 bucket_key(str): The required parameter. The id of the bucket where the test resides.
                 test_id (str): The required parameter. The id of the test where the schedule resides.
                 schedule_id (str): The required parameter. The id of the schedule to read.
-        - create: Create a new schedule for the test. 
+        - create: Create a new schedule for the test.
             args(dict): Dictionary with the following required parameters:
                 bucket_key (str): The required parameter. The id of the bucket where the test resides.
                 test_id (str): The required parameter. The id of the test where the schedule resides.
-                environment_id (str): The required parameter. The id of the environment to associate with the schedule.
+                environment_id (str): The required parameter. The id of the environment to associate with 
+                the schedule.
                 interval (str): The required parameter. The interval at which the schedule should run
                  Allowed values are: -
                     1m — every minute
@@ -129,6 +116,6 @@ def register(mcp, token: Optional[BzmApimToken]):
         except Exception:
             return BaseResult(
                 error=f"""Error: {traceback.format_exc()}
-                          If you think this is a bug, please contact BlazeMeter support or report issue at https://github.com/BlazeMeter/bzm-mcp/issues"""
-                )
-
+                          If you think this is a bug, please contact BlazeMeter support or report issue at
+                           https://github.com/BlazeMeter/bzm-mcp/issues"""
+            )
