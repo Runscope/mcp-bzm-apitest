@@ -73,7 +73,7 @@ def build():
         arch = 'arm64'  # Assume ARM64 for Docker compatibility
 
     system = "macos" if system == 'darwin' else system
-    name = f'bzm-mcp-{system}-{arch}{suffix}'
+    name = f'mcp-bzm-apim-{system}-{arch}{suffix}'
 
     icon = 'app.ics' if system == 'macos' else 'app.ico'
 
