@@ -34,6 +34,15 @@ class StepManager:
         )
         return step_result
 
+    async def list(self, bucket_key: str, test_id: str) -> BaseResult:
+        steps_result = await api_request(
+            self.token,
+            "GET",
+            STEPS_ENDPOINT.format(bucket_key, test_id),
+            result_formatter=format_steps
+        )
+        return steps_result
+
 
 def register(mcp, token: Optional[BzmApimToken]):
     @mcp.tool(
@@ -44,8 +53,12 @@ def register(mcp, token: Optional[BzmApimToken]):
         - read: Read a test step. Get the detailed information of a step.
             args(dict): Dictionary with the following required parameters:
                 bucket_key(str): The required parameter. The id of the bucket where the test resides.
-                test_id (str): The required parameter. The id of the test where the schedule resides.
+                test_id (str): The required parameter. The id of the test where the step resides.
                 step_id (str): The required parameter. The id of the step to read.
+        - list: List all steps for a given test.
+            args(dict): Dictionary with the following required parameters:
+                bucket_key(str): The required parameter. The id of the bucket where the test resides.
+                test_id (str): The required parameter. The id of the test whose steps to list.
         """
     )
     async def steps(action: str, args: Dict[str, Any], ctx: Context) -> BaseResult:
@@ -55,6 +68,8 @@ def register(mcp, token: Optional[BzmApimToken]):
                 case "read":
                     return await step_manager.read(args["bucket_key"], args["test_id"],
                                                    args["step_id"])
+                case "list":
+                    return await step_manager.list(args["bucket_key"], args["test_id"])
                 case _:
                     return BaseResult(
                         error=f"Action {action} not found in steps manager tool"

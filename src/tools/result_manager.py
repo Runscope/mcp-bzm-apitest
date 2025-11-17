@@ -46,7 +46,7 @@ class ResultManager:
         return await api_request(
             self.token,
             "GET",
-            f"{BUCKET_LEVEL_RESULTS_ENDPOINT.format(bucket_key)}/{bucket_level_test_run_id}",
+            f"/v1{BUCKET_LEVEL_RESULTS_ENDPOINT.format(bucket_key)}/{bucket_level_test_run_id}",
             result_formatter=format_bucket_level_results
         )
 

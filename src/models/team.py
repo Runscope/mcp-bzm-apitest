@@ -2,7 +2,7 @@
 Team models for BlazeMeter API Monitoring
 """
 from typing import Optional, Dict, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class Bucket(BaseModel):
@@ -15,7 +15,7 @@ class Bucket(BaseModel):
 class TeamUsers(BaseModel):
     """Team user model representing a user within a team."""
     user_id: str = Field(
-        alias="id", description="The user unique id also known as user_id who is a member of the team")
+        alias="uuid", description="The user unique id also known as user_id who is a member of the team")
     name: str = Field(description="The name of the user who is a member of the team")
     email: str = Field(description="The email address of the user who is a member of the team")
 
@@ -29,17 +29,26 @@ class Team(BaseModel):
     buckets: List[Bucket] = Field(description="List of buckets present in the team")
     user_count: int = Field(description="Number of users in the team")
     bucket_count: int = Field(description="Number of buckets present in the team")
-    subteams: List[str] = Field(description="List of subteams")
     created_by: TeamUsers = Field(description="User details who created the team")
     owned_by: TeamUsers = Field(description="User details who owns the team currently")
-    user_ids: List[str] = Field(alias="user_uuids",
-                                description="List of user IDs who are the members of the team")
+    ai_consent: bool = Field(default=False, description="Whether AI consent is enabled for the team")
+
+
+    @model_validator(mode='before')
+    @classmethod
+    def extract_ai_consent(cls, data):
+        """Extract ai_consent from flags list."""
+        if 'flags' in data:
+            data['ai_consent'] = "ai_consent_enabled" in data.get('flags', [])
+            data.pop('flags')  # Remove flags from the data
+        return data
 
 
 class AccountTeamObj(BaseModel):
     """Team model representing a team within an account."""
     team_id: str = Field(alias="id", description="The team unique id")
     name: str = Field(description="The name of the team")
+    owner: TeamUsers = Field(description="The owner of the team")
 
 
 class Account(BaseModel):
