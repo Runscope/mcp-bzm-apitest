@@ -11,7 +11,7 @@ from src.config.token import BzmApimToken, BzmApimTokenError
 from src.config.version import __version__, __executable__
 from src.server import register_tools
 
-BLAZEMETER_APIM_KEY_FILE_PATH = os.getenv('BZM_APIM_TOKEN_FILE')
+BLAZEMETER_APIM_KEY_FILE_PATH = os.getenv('BZM_API_TEST_TOKEN_FILE')
 
 LOG_LEVELS = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
@@ -34,15 +34,15 @@ def get_api_token():
     token = None
 
     # Option1: If token is provided directly in the mcp.json file
-    if os.getenv('BZM_APIM_TOKEN'):
-        token = BzmApimToken(os.getenv('BZM_APIM_TOKEN')).token
+    if os.getenv('BZM_API_TEST_TOKEN'):
+        token = BzmApimToken(os.getenv('BZM_API_TEST_TOKEN')).token
         return token
 
     # Option2: Token is provided in the .env file
     # 2.a - User sets BZM_APIM_TOKEN_FILE environment variable to point to the file location
     # 2.b - If not set, we look for the file in the same location as the executable
     local_api_key_file = os.path.join(
-        os.path.dirname(__executable__), "bzm_apim_token.env")
+        os.path.dirname(__executable__), "bzm_api_test_token.env")
 
     if not BLAZEMETER_APIM_KEY_FILE_PATH and os.path.exists(local_api_key_file):
         BLAZEMETER_APIM_KEY_FILE_PATH = local_api_key_file
@@ -57,16 +57,16 @@ def get_api_token():
             # Other errors (file not found, permissions, etc.) - also handled by tools
             pass
     elif is_docker:
-        token = BzmApimToken(os.getenv('BZM_APIM_TOKEN'))
+        token = BzmApimToken(os.getenv('BZM_API_TEST_TOKEN'))
     return token
 
 
 def run(log_level: str = "CRITICAL"):
     token = get_api_token()
     instructions = """
-    # BlazeMeter APIM MCP Server
+    # BlazeMeter API Test MCP Server
     This MCP server provides AI assistants with programmatic access to BlazeMeter's
-    API Monitoring platform via the BlazeMeter APIM API.
+    API Monitoring platform via the BlazeMeter API test APIs.
     It enables AI assistants to perform various operations related to API monitoring or testing,
     such as creating, managing, and analyzing API tests and their executions.
     The server transforms BlazeMeter's API Monitoring capabilities into an AI-accessible service,
@@ -84,14 +84,14 @@ def run(log_level: str = "CRITICAL"):
             schedules: Schedules belong to a particular test.
             executions: Executions belong to a particular test.
     """
-    mcp = FastMCP("blazemeter-apim-mcp", instructions=instructions,
+    mcp = FastMCP("blazemeter-apitest-mcp", instructions=instructions,
                   log_level=cast(LOG_LEVELS, log_level))
     register_tools(mcp, token)
     mcp.run(transport="stdio")
 
 
 def main():
-    parser = argparse.ArgumentParser(prog="mcp-bzm-apim")
+    parser = argparse.ArgumentParser(prog="mcp-bzm-apitest")
 
     parser.add_argument(
         "--version",
@@ -126,12 +126,12 @@ def main():
             " | |_) | | (_| |/ /  __/| |\\/| |  __/ ||  __/ |   \n"
             " |____/|_|\\__,_/___\\___||_|  |_|\\___|\\__\\___|_|   \n"
             "                                                    \n"
-            f" BlazeMeter APIM MCP Server v{__version__} \n"
+            f" BlazeMeter API Test MCP Server v{__version__} \n"
         )
         print(logo_ascii)
 
         config_dict = {
-            "BlazeMeter APIM MCP": {
+            "BlazeMeter API Test MCP": {
                 "command": f"{__executable__}",
                 "args": ["--mcp"],
             }
@@ -145,10 +145,10 @@ def main():
         print("\n".join(json_str.split("\n")[1:-1]) + "\n")
 
         if not get_api_token():
-            print(" [X] BlazeMeter APIM token not configured.")
+            print(" [X] BlazeMeter API Test token not configured.")
             print(" ")
             print(
-                " Copy the BlazeMeter APIM Token file (bzm_apim_token.json) to the same location of this"
+                " Copy the BlazeMeter API Test Token file (bzm_apim_token.json) to the same location of this"
                 " executable.")
             print(" ")
             print(" How to obtain the bzm_apim_token file:")
@@ -157,7 +157,7 @@ def main():
             print(" [OK] BlazeMeter APIM token configured correctly.")
         print(" ")
         print(" There are configuration alternatives, if you want to know more:")
-        print(" https://github.com/Blazemeter/bzm-mcp/")
+        print(" https://github.com/Runscope/mcp-bzm-apim")
         print(" ")
         input("Press Enter to exit...")
 

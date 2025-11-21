@@ -1,7 +1,7 @@
 [project]
-name = "mcp-bzm-apim"
+name = "mcp-bzm-apitest"
 version = "1.0.0"
-description = "MCP Server for BlazeMeter API Monitoring (formerly Runscope)"
+description = "MCP Server for BlazeMeter API Monitoring (Runscope)"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

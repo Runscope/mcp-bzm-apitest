@@ -28,7 +28,7 @@ class BzmApimToken:
 
         try:
             load_dotenv(dotenv_path=p)
-            token_val = os.getenv("BZM_APIM_TOKEN")
+            token_val = os.getenv("BZM_API_TEST_TOKEN")
         except Exception as e:
             raise BzmApimTokenError(
                 f"Error reading/parsing Token from {p!r}: {e}") from e

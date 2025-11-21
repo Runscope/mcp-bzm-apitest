@@ -31,12 +31,12 @@ async def api_request(token: Optional[BzmApimToken], method: str, endpoint: str,
     """
     if not token:
         return BaseResult(
-            error="No API token. Set BZM_APIM_TOKEN env var with the token or BZM_APIM_TOKEN_FILE with "
-                  "the file path or BZM_APIM_TOKEN secrets in docker catalog configuration.")
+            error="No API token. Set BZM_API_TEST_TOKEN env var with the token or BZM_API_TEST_TOKEN_FILE "
+                  "with the file path or BZM_API_TEST_TOKEN secrets in docker catalog configuration.")
 
     headers = kwargs.pop("headers", {})
     headers["Authorization"] = f"Bearer {token}"
-    headers["User-Agent"] = f"bzm-apim-mcp/{__version__} ({ua_part})"
+    headers["User-Agent"] = f"bzm-apitest-mcp/{__version__} ({ua_part})"
 
     timeout = httpx.Timeout(
         connect=15.0,

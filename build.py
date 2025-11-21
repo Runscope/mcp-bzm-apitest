@@ -46,7 +46,7 @@ VSVersionInfo(
         StringStruct('InternalName', '{name}'),
         StringStruct('LegalCopyright', '© {date.today().year} BlazeMeter'),
         StringStruct('OriginalFilename', '{name}.exe'),
-        StringStruct('ProductName', 'BlazeMeter MCP'),
+        StringStruct('ProductName', 'BlazeMeter API Test MCP'),
         StringStruct('ProductVersion', '{version}')])
       ]),
     VarFileInfo([VarStruct('Translation', [1033, 1200])])
@@ -73,7 +73,7 @@ def build():
         arch = 'arm64'  # Assume ARM64 for Docker compatibility
 
     system = "macos" if system == 'darwin' else system
-    name = f'mcp-bzm-apim-{system}-{arch}{suffix}'
+    name = f'mcp-bzm-apitest-{system}-{arch}{suffix}'
 
     icon = 'app.ics' if system == 'macos' else 'app.ico'
 

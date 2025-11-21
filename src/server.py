@@ -14,7 +14,7 @@ def register_tools(mcp, token: Optional[BzmApimToken]):
 
     Args:
             mcp: The MCP server instance
-            token: Optional BlazeMeter APIM token (can be None if not configured)
+            token: Optional BlazeMeter API Test token (can be None if not configured)
     """
     register_result_manager(mcp, token)
     register_team_manager(mcp, token)
