@@ -10,6 +10,8 @@ dependencies = [
     "pydantic>=2.12.3",
     "pydantic-core>=2.41.4",
     "pyinstaller>=6.16.0",
+    "defusedxml>=0.7.1",
+    "nh3>=0.3.2",
 ]
 
 [project.scripts]

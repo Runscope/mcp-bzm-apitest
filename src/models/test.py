@@ -57,8 +57,6 @@ class Test(BaseModel):
     created_by: CreatedBy
     created_at: float = Field(
         description="The timestamp when the test was created (Unix timestamp)")
-    steps: List[TestStepMini] = Field(
-        default_factory=list, description="Steps present in the test")
     step_count: int = Field(
         default=0, description="Total steps count in the test")
     last_run_created_at: Optional[float] = Field(
