@@ -66,13 +66,3 @@ class Test(BaseModel):
 
     class Config:
         extra = "ignore"
-
-
-class TestEnvironments(BaseModel):
-    """Model for test environments"""
-    environment_id: str = Field(
-        alias="id", description="The unique identifier for the environment. Also known as environment_id")
-    name: str = Field(description="The name of the environment")
-
-    class Config:
-        extra = "ignore"

@@ -13,7 +13,7 @@ from src.config.token import BzmApimToken
 from src.config.defaults import TOOLS_PREFIX, TESTS_ENDPOINT
 from src.models.test import Test
 from src.models import BaseResult
-from src.formatters.test import format_tests, format_test_environments
+from src.formatters.test import format_tests
 from src.common.api_client import api_request
 
 logging.basicConfig(level=logging.DEBUG)
@@ -62,15 +62,6 @@ class TestManager:
             params=parameters
         )
 
-    async def get_test_environments(self, bucket_key: str, test_id: int) -> BaseResult:
-        test_result = await api_request(
-            self.token,
-            "GET",
-            f"{TESTS_ENDPOINT.format(bucket_key)}/{test_id}/environments",
-            result_formatter=format_test_environments
-        )
-        return test_result
-
 
 def register(mcp, token: Optional[BzmApimToken]):
     @mcp.tool(
@@ -80,8 +71,8 @@ def register(mcp, token: Optional[BzmApimToken]):
         Actions:
         - read: Read a test. Get the detailed information of a test.
             args(dict): Dictionary with the following required parameters:
-                test_id (int): The required parameter. The id of the test to read.
                 bucket_key(str): The bucket key where the test resides.
+                test_id (int): The required parameter. The id of the test to read.
         - create: Create a new test.
             args(dict): Dictionary with the following required parameters:
                 test_name (str): The required name of the test to create.
@@ -91,10 +82,6 @@ def register(mcp, token: Optional[BzmApimToken]):
                 bucket_key (str): The key of the bucket to list tests from.
                 limit (int, default=10, valid=[1 to 50]): The number of tests to list.
                 offset (int, default=0): Number of tests to skip.
-        - get_test_environments: Get all the environments defined in a test.
-            args(dict): Dictionary with the following required parameters:
-                test_id (int): The required parameter. The id of the test to get schedules for.
-                bucket_key(str): The bucket key where the test resides.
         """
     )
     async def tests(action: str, args: Dict[str, Any], ctx: Context) -> BaseResult:
@@ -108,8 +95,6 @@ def register(mcp, token: Optional[BzmApimToken]):
                 case "list":
                     return await test_manager.list(args["bucket_key"], args.get("limit", 50),
                                                    args.get("offset", 0))
-                case "get_test_environments":
-                    return await test_manager.get_test_environments(args["bucket_key"], args["test_id"])
                 case _:
                     return BaseResult(
                         error=f"Action {action} not found in tests manager tool"
