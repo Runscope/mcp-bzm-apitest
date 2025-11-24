@@ -7,17 +7,13 @@ class BaseResult(BaseModel):
     """
      This is the schema for the tool output
     """
-    result: Optional[List[Any]] = Field(
-        description="Result List", default=None)
-    total: Optional[int] = Field(
-        description="Total available records", default=None)
-    has_more: Optional[bool] = Field(
-        description="More records per page to list", default=None)
+    result: Optional[List[Any]] = Field(description="Result List", default=None)
+    total: Optional[int] = Field(description="Total available records", default=None)
+    has_more: Optional[bool] = Field(description="More records per page to list", default=None)
     error: Optional[str] = Field(description="Error message", default=None)
-    info: Optional[List[str]] = Field(
-        description="Info messages", default=None)
-    warning: Optional[List[str]] = Field(
-        description="Warning messages", default=None)
+    info: Optional[List[str]] = Field(description="Info messages", default=None)
+    warning: Optional[List[str]] = Field(description="Warning messages", default=None)
+    hint: Optional[List[str]] = Field(description="Hint messages", default=None)
 
     def append_warnings(self, messages: List[str]):
         if not self.warning:
@@ -28,6 +24,11 @@ class BaseResult(BaseModel):
         if not self.info:
             self.info = []
         self.info.extend(info)
+
+    def append_hints(self, hints: List[str]):
+        if not self.hint:
+            self.hint = []
+        self.hint.extend(hints)
 
     def model_dump(self, **kwargs):
         return super().model_dump(exclude_none=True, **kwargs)

@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [project.scripts]
-mcp-bzm-apim = "main:main"
+mcp-bzm-apitest = "main:main"
 
 [tool.pycodestyle]
 max-line-length = 108

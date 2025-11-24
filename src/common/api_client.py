@@ -65,7 +65,8 @@ async def api_request(token: Optional[BzmApimToken], method: str, endpoint: str,
                 error=response_dict.get("error", None),
                 total=response_dict.get("total", default_total),
                 has_more=response_dict.get("total", 0) - (
-                    response_dict.get("skip", 0) + response_dict.get("limit", 0)) > 0
+                    response_dict.get("skip", 0) + response_dict.get("limit", 0)) > 0,
+                hint=kwargs.get("hint", [])
             )
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 403:

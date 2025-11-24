@@ -45,7 +45,9 @@ class TestManager:
             "POST",
             f"{TESTS_ENDPOINT.format(bucket_key)}",
             result_formatter=format_tests,
-            json=test_body
+            json=test_body,
+            hint=["A test is created without any test steps. You may use 'steps' tool to add steps to the"
+                  " test."]
         )
 
     async def list(self, bucket_key: str, limit: int, offset: int) -> BaseResult:
@@ -107,5 +109,5 @@ def register(mcp, token: Optional[BzmApimToken]):
             return BaseResult(
                 error=f"""Error: {traceback.format_exc()}
                           If you think this is a bug, please contact BlazeMeter support or report issue at 
-                          https://github.com/BlazeMeter/bzm-mcp/issues"""
+                          https://github.com/Runscope/mcp-bzm-apitest/issues"""
             )

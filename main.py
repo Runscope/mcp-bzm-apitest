@@ -73,16 +73,24 @@ def run(log_level: str = "CRITICAL"):
     allowing intelligent automation of complex API monitoring tasks.
 
     General rules:
-        - Invoke the 'list' action on teams tools to get a list of all the teams current user has access to. This should be the first action to perform as all further actions depend on teams.
-        - You can use list_buckets to get all buckets the user has access to. Each bucket object contains the team_id it belongs to. You do not need to call list_teams first unless you explicitly need team metadata.
+        - Invoke the 'list' action on teams tools to get a list of all the teams current user has access to.
+           This should be the first action to perform as all further actions depend on teams. All further 
+           operations can be done if the 'ai_consent' for a particular team is true/given otherwise return an
+           error message or tool call result itself will have the error field populated.
+        - You can use list_buckets to get all buckets the user has access to. Each bucket object contains 
+           the team_id it belongs to.
         - If you have the information needed to call a tool action with its arguments, do so.
-        - Read action always get more information about a particular item than the list action, list only display minimal information.
+        - Read action always get more information about a particular item than the list action, 
+           list only display minimal information.
+        - Tool results may have 'hint' field in the result object, use it to guide your next actions.
         - Dependencies:
             teams: It doesn't depend on anyone. A user can be part of multiple teams.
             buckets: Buckets belong to a particular team. Each team has a default bucket which can be identified by 'default': bool property in the bucket object.
             tests: Tests belong to a particular bucket.
             schedules: Schedules belong to a particular test.
-            executions: Executions belong to a particular test.
+            environments: Test Environments belong to a particular test.
+            steps: Test steps belong to a particular test.
+            results: Test execution results belong to a particular test.
     """
     mcp = FastMCP("blazemeter-apitest-mcp", instructions=instructions,
                   log_level=cast(LOG_LEVELS, log_level))
@@ -148,16 +156,16 @@ def main():
             print(" [X] BlazeMeter API Test token not configured.")
             print(" ")
             print(
-                " Copy the BlazeMeter API Test Token file (bzm_apim_token.json) to the same location of this"
-                " executable.")
+                " Copy the BlazeMeter API Test Token file (bzm_api_test_token.json) to the same location of"
+                " this executable.")
             print(" ")
-            print(" How to obtain the bzm_apim_token file:")
+            print(" How to obtain the bzm_api_test_token file:")
             print(" https://help.blazemeter.com/docs/guide/api-blazemeter-api-keys.html")
         else:
-            print(" [OK] BlazeMeter APIM token configured correctly.")
+            print(" [OK] BlazeMeter API Test token configured correctly.")
         print(" ")
         print(" There are configuration alternatives, if you want to know more:")
-        print(" https://github.com/Runscope/mcp-bzm-apim")
+        print(" https://github.com/Runscope/mcp-bzm-apitest")
         print(" ")
         input("Press Enter to exit...")
 

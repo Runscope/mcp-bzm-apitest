@@ -90,5 +90,5 @@ def register(mcp, token: Optional[BzmApimToken]):
             return BaseResult(
                 error=f"""Error: {traceback.format_exc()}
                           If you think this is a bug, please contact BlazeMeter support or report issue at
-                           https://github.com/BlazeMeter/bzm-mcp/issues"""
+                           https://github.com/Runscope/mcp-bzm-apitest/issues"""
             )
