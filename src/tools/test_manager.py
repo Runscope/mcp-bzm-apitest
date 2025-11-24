@@ -13,7 +13,7 @@ from src.config.token import BzmApimToken
 from src.config.defaults import TOOLS_PREFIX, TESTS_ENDPOINT
 from src.models.test import Test
 from src.models import BaseResult
-from src.formatters.test import format_tests
+from src.formatters.test import format_tests, format_test_metrics
 from src.common.api_client import api_request
 
 logging.basicConfig(level=logging.DEBUG)
@@ -64,6 +64,23 @@ class TestManager:
             params=parameters
         )
 
+    async def get_test_metrics(self, bucket_key: str, test_id: str, timeframe: str, environment_uuid: str,
+                               region: str) -> BaseResult:
+        parameters = {
+            "timeframe": timeframe,
+            "environment_uuid": environment_uuid,
+            "region": region,
+            "marshal_result": True
+        }
+
+        return await api_request(
+            self.token,
+            "GET",
+            f"{TESTS_ENDPOINT.format(bucket_key)}/{test_id}/metrics",
+            result_formatter=format_test_metrics,
+            params=parameters
+        )
+
 
 def register(mcp, token: Optional[BzmApimToken]):
     @mcp.tool(
@@ -74,7 +91,7 @@ def register(mcp, token: Optional[BzmApimToken]):
         - read: Read a test. Get the detailed information of a test.
             args(dict): Dictionary with the following required parameters:
                 bucket_key(str): The bucket key where the test resides.
-                test_id (int): The required parameter. The id of the test to read.
+                test_id (str): The required parameter. The id of the test to read.
         - create: Create a new test.
             args(dict): Dictionary with the following required parameters:
                 test_name (str): The required name of the test to create.
@@ -84,6 +101,16 @@ def register(mcp, token: Optional[BzmApimToken]):
                 bucket_key (str): The key of the bucket to list tests from.
                 limit (int, default=10, valid=[1 to 50]): The number of tests to list.
                 offset (int, default=0): Number of tests to skip.
+        - get_test_metrics: Get metrics for a specific test.
+            args(dict): Dictionary with the following required parameters:
+                bucket_key(str): The bucket key where the test resides.
+                test_id (str): The required parameter. The id of the test to get metrics for.
+                timeframe(str): The optional parameter: The timeframe for which to get metrics. Possible 
+                 values are "hour", "day", "week", "month". Default is "day".
+                environment_uuid(str): The optional parameter: The environment_id to filter metrics for 
+                 test executions in a specific environment. Default value is "all".
+                region(str): The optional parameter: The region to filter metrics for test executions in a 
+                 specific region. Default value is "all".
         """
     )
     async def tests(action: str, args: Dict[str, Any], ctx: Context) -> BaseResult:
@@ -97,6 +124,11 @@ def register(mcp, token: Optional[BzmApimToken]):
                 case "list":
                     return await test_manager.list(args["bucket_key"], args.get("limit", 50),
                                                    args.get("offset", 0))
+                case "get_test_metrics":
+                    return await test_manager.get_test_metrics(args["bucket_key"], args["test_id"],
+                                                               args.get("timeframe", "day"),
+                                                               args.get("environment_uuid", "all"),
+                                                               args.get("region", "all"))
                 case _:
                     return BaseResult(
                         error=f"Action {action} not found in tests manager tool"

@@ -71,7 +71,7 @@ async def api_request(token: Optional[BzmApimToken], method: str, endpoint: str,
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 403:
                 return BaseResult(
-                    error="Invalid credentials"
+                    error=e.response.json().get("error", {}).get('message', 'Invalid Credentials')
                 )
             elif e.response.status_code == 401:
                 return BaseResult(

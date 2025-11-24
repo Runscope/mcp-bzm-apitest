@@ -230,7 +230,7 @@ class TestExecutionRuns(BaseModel):
     environment_id: str = Field(
         description="The environment ID used for this test run")
     test_run_url: str = Field(
-        alias="api_test_run_url", description="The URL of the api to fetch the results of this test run")
+        alias="test_run_url", description="The url of blazemeter dashboard(UI) to view the test run details")
     variables: Dict[str, Any] = Field(
         description="The variables used in the test run")
 

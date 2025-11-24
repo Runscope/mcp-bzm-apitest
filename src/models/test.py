@@ -66,3 +66,61 @@ class Test(BaseModel):
 
     class Config:
         extra = "ignore"
+
+
+class ResponseTimePoint(BaseModel):
+    """A single point in the response times timeseries data."""
+    timestamp: int = Field(
+        description="Unix timestamp for this data point"
+    )
+    avg_response_time_ms: float = Field(
+        description="Average response time in milliseconds at this timestamp"
+    )
+    success_ratio: float = Field(
+        description="Success ratio at this timestamp (0.0 to 1.0)"
+    )
+
+
+class PeriodMetrics(BaseModel):
+    """Metrics for a specific time period."""
+    total_test_runs: Optional[float] = Field(
+        default=None,
+        description="Total number of test runs in the period"
+    )
+    response_time_50th_percentile: Optional[float] = Field(
+        default=None,
+        description="50th percentile (median) response time in milliseconds"
+    )
+    response_time_95th_percentile: Optional[float] = Field(
+        default=None,
+        description="95th percentile response time in milliseconds"
+    )
+    response_time_99th_percentile: Optional[float] = Field(
+        default=None,
+        description="99th percentile response time in milliseconds"
+    )
+
+
+class TestMetrics(BaseModel):
+    """Model representing test metrics data from API Monitoring."""
+    response_times: List[ResponseTimePoint] = Field(
+        description="Time-series data points for response times and success ratios"
+    )
+    timeframe: str = Field(
+        description="The timeframe for the metrics. Possible values: 'hour', 'day', 'week', 'month'"
+    )
+    this_time_period: PeriodMetrics = Field(
+        description="Aggregated metrics for the current time period"
+    )
+    change_from_last_period: PeriodMetrics = Field(
+        description="Change in metrics compared to the previous period. Values can be null if no previous data exists"
+    )
+    region: str = Field(
+        description="The region filter applied. Use 'all' for all regions or specific region code"
+    )
+    environment_id: str = Field(alias="environment_uuid",
+                                description="The environment filter applied. Use 'all' for all environments or specific environment"
+                                )
+
+    class Config:
+        extra = "ignore"

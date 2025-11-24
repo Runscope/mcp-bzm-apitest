@@ -1,5 +1,5 @@
 from typing import List, Any, Optional
-from src.models.test import Test
+from src.models.test import Test, TestMetrics
 
 
 def format_tests(tests: List[Any], params: Optional[dict] = None) -> List[Test]:
@@ -9,3 +9,12 @@ def format_tests(tests: List[Any], params: Optional[dict] = None) -> List[Test]:
             Test(**test).model_dump(by_alias=False)
         )
     return formatted_tests
+
+
+def format_test_metrics(metrics: List[Any], params: Optional[dict] = None) -> List[TestMetrics]:
+    formatted_metrics = []
+    for metric in metrics:
+        formatted_metrics.append(
+            TestMetrics(**metric).model_dump(by_alias=False)
+        )
+    return formatted_metrics
