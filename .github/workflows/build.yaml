@@ -79,7 +79,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: mcp-bzm-apim-${{ matrix.name }}-${{ matrix.arch }}
+        name: mcp-bzm-apitest-${{ matrix.name }}-${{ matrix.arch }}
         path: dist/
 
   commit-artifacts:
@@ -102,28 +102,28 @@ jobs:
         # upload-artifacts job does not preserve the executable permission
         # so we need to set it manually: https://github.com/actions/download-artifact?tab=readme-ov-file#limitations
 
-        if [ -d "artifacts/mcp-bzm-apim-linux-amd64" ]; then
-          cp artifacts/mcp-bzm-apim-linux-amd64/* dist/
-          chmod +x dist/mcp-bzm-apim-linux-amd64
+        if [ -d "artifacts/mcp-bzm-apitest-linux-amd64" ]; then
+          cp artifacts/mcp-bzm-apitest-linux-amd64/* dist/
+          chmod +x dist/mcp-bzm-apitest-linux-amd64
           echo "Copied Linux AMD64 binary"
         fi
-        if [ -d "artifacts/mcp-bzm-apim-linux-arm64" ]; then
-          cp artifacts/mcp-bzm-apim-linux-arm64/* dist/
-          chmod +x dist/mcp-bzm-apim-linux-arm64
+        if [ -d "artifacts/mcp-bzm-apitest-linux-arm64" ]; then
+          cp artifacts/mcp-bzm-apitest-linux-arm64/* dist/
+          chmod +x dist/mcp-bzm-apitest-linux-arm64
           echo "Copied Linux ARM64 binary"
         fi
-        if [ -d "artifacts/mcp-bzm-apim-windows-amd64" ]; then
-          cp artifacts/mcp-bzm-apim-windows-amd64/* dist/
+        if [ -d "artifacts/mcp-bzm-apitest-windows-amd64" ]; then
+          cp artifacts/mcp-bzm-apitest-windows-amd64/* dist/
           echo "Copied Windows AMD64 binary"
         fi
-        if [ -d "artifacts/mcp-bzm-apim-macos-arm64" ]; then
-          cp artifacts/mcp-bzm-apim-macos-arm64/* dist/
-          chmod +x dist/mcp-bzm-apim-macos-arm64
+        if [ -d "artifacts/mcp-bzm-apitest-macos-arm64" ]; then
+          cp artifacts/mcp-bzm-apitest-macos-arm64/* dist/
+          chmod +x dist/mcp-bzm-apitest-macos-arm64
           echo "Copied macOS ARM64 binary"
         fi
-        if [ -d "artifacts/mcp-bzm-apim-macos-amd64" ]; then
-          cp artifacts/mcp-bzm-apim-macos-amd64/* dist/
-          chmod +x dist/mcp-bzm-apim-macos-amd64
+        if [ -d "artifacts/mcp-bzm-apitest-macos-amd64" ]; then
+          cp artifacts/mcp-bzm-apitest-macos-amd64/* dist/
+          chmod +x dist/mcp-bzm-apitest-macos-amd64
           echo "Copied macOS AMD64 binary"
         fi
 

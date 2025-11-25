@@ -156,11 +156,11 @@ def main():
             print(" [X] BlazeMeter API Test token not configured.")
             print(" ")
             print(
-                " Copy the BlazeMeter API Test Token file (bzm_api_test_token.json) to the same location of"
+                " Copy the BlazeMeter API Test Token file (bzm_api_test_token.env) to the same location of"
                 " this executable.")
             print(" ")
-            print(" How to obtain the bzm_api_test_token file:")
-            print(" https://help.blazemeter.com/docs/guide/api-blazemeter-api-keys.html")
+            print(" How to obtain the BZM API Test Access Token:")
+            print("https://help.blazemeter.com/apidocs/api-monitoring/authentication.htm?tocpath=API%20Monitoring%7CAuthentication%20Process%7C_____0#applications")
         else:
             print(" [OK] BlazeMeter API Test token configured correctly.")
         print(" ")
