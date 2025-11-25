@@ -1,20 +1,16 @@
-import asyncio
 import logging
-import os
 import traceback
-from pathlib import Path
-from typing import Any, Dict
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import httpx
 from mcp.server.fastmcp import Context
 
+from src.common.api_client import api_request
+from src.config.defaults import SCHEDULES_ENDPOINT, TOOLS_PREFIX
 from src.config.token import BzmApimToken
-from src.config.defaults import TOOLS_PREFIX, SCHEDULES_ENDPOINT
+from src.formatters.schedule import format_schedules
 from src.models import BaseResult
 from src.models.schedule import CreateSchedule
-from src.formatters.schedule import format_schedules
-from src.common.api_client import api_request
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -31,16 +27,14 @@ class ScheduleManager:
             self.token,
             "GET",
             f"{SCHEDULES_ENDPOINT.format(bucket_key, test_id)}/{schedule_id}",
-            result_formatter=format_schedules
+            result_formatter=format_schedules,
         )
         return schedule_result
 
     async def create(self, bucket_key: str, test_id: str, environment_id: str, interval: str) -> BaseResult:
         # Validate input using the Pydantic model
         schedule_data = CreateSchedule(
-            environment_id=environment_id,
-            interval=interval,
-            note="Schedule created via MCP tool"
+            environment_id=environment_id, interval=interval, note="Schedule created via MCP tool"
         )
         body = schedule_data.model_dump(by_alias=True, exclude_none=True)
 
@@ -49,7 +43,7 @@ class ScheduleManager:
             "POST",
             f"/v1{SCHEDULES_ENDPOINT.format(bucket_key, test_id)}",
             result_formatter=format_schedules,
-            json=body
+            json=body,
         )
 
     async def list(self, bucket_key: str, test_id: str) -> BaseResult:
@@ -57,7 +51,7 @@ class ScheduleManager:
             self.token,
             "GET",
             f"{SCHEDULES_ENDPOINT.format(bucket_key, test_id)}",
-            result_formatter=format_schedules
+            result_formatter=format_schedules,
         )
 
 
@@ -76,7 +70,7 @@ def register(mcp, token: Optional[BzmApimToken]):
             args(dict): Dictionary with the following required parameters:
                 bucket_key (str): The required parameter. The id of the bucket where the test resides.
                 test_id (str): The required parameter. The id of the test where the schedule resides.
-                environment_id (str): The required parameter. The id of the environment to associate with 
+                environment_id (str): The required parameter. The id of the environment to associate with
                 the schedule.
                 interval (str): The required parameter. The interval at which the schedule should run
                  Allowed values are: -
@@ -91,28 +85,26 @@ def register(mcp, token: Optional[BzmApimToken]):
             args(dict): Dictionary with the following required parameters:
                 bucket_key(str): The required parameter. The id of the bucket where the test resides.
                 test_id (str): The required parameter. The id of the test where the schedules reside
-        """
+        """,
     )
     async def schedules(action: str, args: Dict[str, Any], ctx: Context) -> BaseResult:
         schedule_manager = ScheduleManager(token, ctx)
         try:
             match action:
                 case "read":
-                    return await schedule_manager.read(args["bucket_key"], args["test_id"],
-                                                       args["schedule_id"])
+                    return await schedule_manager.read(
+                        args["bucket_key"], args["test_id"], args["schedule_id"]
+                    )
                 case "create":
-                    return await schedule_manager.create(args["bucket_key"], args["test_id"],
-                                                         args["environment_id"], args["interval"])
+                    return await schedule_manager.create(
+                        args["bucket_key"], args["test_id"], args["environment_id"], args["interval"]
+                    )
                 case "list":
                     return await schedule_manager.list(args["bucket_key"], args["test_id"])
                 case _:
-                    return BaseResult(
-                        error=f"Action {action} not found in schedules manager tool"
-                    )
+                    return BaseResult(error=f"Action {action} not found in schedules manager tool")
         except httpx.HTTPStatusError:
-            return BaseResult(
-                error=f"HTTP Error: {traceback.format_exc()}"
-            )
+            return BaseResult(error=f"HTTP Error: {traceback.format_exc()}")
         except Exception:
             return BaseResult(
                 error=f"""Error: {traceback.format_exc()}

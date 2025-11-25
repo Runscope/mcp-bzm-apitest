@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Callable
+from typing import Optional
 
 
 def get_date_time_iso(timestamp: int) -> Optional[str]:

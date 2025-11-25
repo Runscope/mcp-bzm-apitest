@@ -45,3 +45,6 @@ Thumbs.db
 
 # uv
 .uv/
+
+.coverage
+coverage.xml

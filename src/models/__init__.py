@@ -1,12 +1,13 @@
-from typing import Any, Optional, List
+from typing import Any, List, Optional
 
 from pydantic import BaseModel, Field
 
 
 class BaseResult(BaseModel):
     """
-     This is the schema for the tool output
+    This is the schema for the tool output
     """
+
     result: Optional[List[Any]] = Field(description="Result List", default=None)
     total: Optional[int] = Field(description="Total available records", default=None)
     has_more: Optional[bool] = Field(description="More records per page to list", default=None)

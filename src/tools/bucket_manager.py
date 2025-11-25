@@ -1,20 +1,15 @@
-import asyncio
 import logging
-import os
 import traceback
-from pathlib import Path
-from typing import Any, Dict
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import httpx
 from mcp.server.fastmcp import Context
 
-from src.config.token import BzmApimToken
-from src.config.defaults import TOOLS_PREFIX, BUCKETS_ENDPOINT
-from src.models.bucket import Bucket
-from src.models import BaseResult
-from src.formatters.bucket import format_buckets
 from src.common.api_client import api_request
+from src.config.defaults import BUCKETS_ENDPOINT, TOOLS_PREFIX
+from src.config.token import BzmApimToken
+from src.formatters.bucket import format_buckets
+from src.models import BaseResult
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -28,33 +23,18 @@ class BucketManager:
 
     async def read(self, bucket_key: str) -> BaseResult:
         bucket_result = await api_request(
-            self.token,
-            "GET",
-            f"{BUCKETS_ENDPOINT}/{bucket_key}",
-            result_formatter=format_buckets
+            self.token, "GET", f"{BUCKETS_ENDPOINT}/{bucket_key}", result_formatter=format_buckets
         )
         return bucket_result
 
     async def create(self, bucket_name: str, team_id: int) -> BaseResult:
-        parameters = {
-            "name": bucket_name,
-            "team_uuid": team_id
-        }
+        parameters = {"name": bucket_name, "team_uuid": team_id}
         return await api_request(
-            self.token,
-            "POST",
-            f"{BUCKETS_ENDPOINT}",
-            result_formatter=format_buckets,
-            params=parameters
+            self.token, "POST", f"{BUCKETS_ENDPOINT}", result_formatter=format_buckets, params=parameters
         )
 
     async def list(self) -> BaseResult:
-        return await api_request(
-            self.token,
-            "GET",
-            f"{BUCKETS_ENDPOINT}",
-            result_formatter=format_buckets
-        )
+        return await api_request(self.token, "GET", f"{BUCKETS_ENDPOINT}", result_formatter=format_buckets)
 
 
 def register(mcp, token: Optional[BzmApimToken]):
@@ -74,7 +54,7 @@ def register(mcp, token: Optional[BzmApimToken]):
                 team_id (str): The id of the team where this bucket will be created.
         - list: List all the buckets user has access to.
             args(dict): '{}' empty dictionary as no arguments are required.
-        """
+        """,
     )
     async def buckets(action: str, args: Dict[str, Any], ctx: Context) -> BaseResult:
         bucket_manager = BucketManager(token, ctx)
@@ -87,16 +67,12 @@ def register(mcp, token: Optional[BzmApimToken]):
                 case "list":
                     return await bucket_manager.list()
                 case _:
-                    return BaseResult(
-                        error=f"Action {action} not found in buckets manager tool"
-                    )
+                    return BaseResult(error=f"Action {action} not found in buckets manager tool")
         except httpx.HTTPStatusError:
-            return BaseResult(
-                error=f"HTTP Error: {traceback.format_exc()}"
-            )
+            return BaseResult(error=f"HTTP Error: {traceback.format_exc()}")
         except Exception:
             return BaseResult(
                 error=f"""Error: {traceback.format_exc()}
-                          If you think this is a bug, please contact BlazeMeter support or report issue at 
+                          If you think this is a bug, please contact BlazeMeter support or report issue at
                           https://github.com/Runscope/mcp-bzm-apitest/issues"""
             )

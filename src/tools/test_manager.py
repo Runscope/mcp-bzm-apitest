@@ -1,20 +1,15 @@
-import asyncio
 import logging
-import os
 import traceback
-from pathlib import Path
-from typing import Any, Dict
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import httpx
 from mcp.server.fastmcp import Context
 
-from src.config.token import BzmApimToken
-from src.config.defaults import TOOLS_PREFIX, TESTS_ENDPOINT
-from src.models.test import Test
-from src.models import BaseResult
-from src.formatters.test import format_tests, format_test_metrics
 from src.common.api_client import api_request
+from src.config.defaults import TESTS_ENDPOINT, TOOLS_PREFIX
+from src.config.token import BzmApimToken
+from src.formatters.test import format_test_metrics, format_tests
+from src.models import BaseResult
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -31,46 +26,43 @@ class TestManager:
             self.token,
             "GET",
             f"{TESTS_ENDPOINT.format(bucket_key)}/{test_id}",
-            result_formatter=format_tests
+            result_formatter=format_tests,
         )
         return test_result
 
     async def create(self, test_name: str, bucket_key: int) -> BaseResult:
-        test_body = {
-            "name": test_name,
-            "description": f"Test {test_name} created via MCP tool"
-        }
+        test_body = {"name": test_name, "description": f"Test {test_name} created via MCP tool"}
         return await api_request(
             self.token,
             "POST",
             f"{TESTS_ENDPOINT.format(bucket_key)}",
             result_formatter=format_tests,
             json=test_body,
-            hint=["A test is created without any test steps. You may use 'steps' tool to add steps to the"
-                  " test."]
+            hint=[
+                "A test is created without any test steps. You may use 'steps' tool to add steps to the"
+                " test."
+            ],
         )
 
     async def list(self, bucket_key: str, limit: int, offset: int) -> BaseResult:
-        parameters = {
-            "count": limit,
-            "offset": offset
-        }
+        parameters = {"count": limit, "offset": offset}
 
         return await api_request(
             self.token,
             "GET",
             f"{TESTS_ENDPOINT.format(bucket_key)}",
             result_formatter=format_tests,
-            params=parameters
+            params=parameters,
         )
 
-    async def get_test_metrics(self, bucket_key: str, test_id: str, timeframe: str, environment_uuid: str,
-                               region: str) -> BaseResult:
+    async def get_test_metrics(
+        self, bucket_key: str, test_id: str, timeframe: str, environment_uuid: str, region: str
+    ) -> BaseResult:
         parameters = {
             "timeframe": timeframe,
             "environment_uuid": environment_uuid,
             "region": region,
-            "marshal_result": True
+            "marshal_result": True,
         }
 
         return await api_request(
@@ -78,7 +70,7 @@ class TestManager:
             "GET",
             f"{TESTS_ENDPOINT.format(bucket_key)}/{test_id}/metrics",
             result_formatter=format_test_metrics,
-            params=parameters
+            params=parameters,
         )
 
 
@@ -105,13 +97,13 @@ def register(mcp, token: Optional[BzmApimToken]):
             args(dict): Dictionary with the following required parameters:
                 bucket_key(str): The bucket key where the test resides.
                 test_id (str): The required parameter. The id of the test to get metrics for.
-                timeframe(str): The optional parameter: The timeframe for which to get metrics. Possible 
+                timeframe(str): The optional parameter: The timeframe for which to get metrics. Possible
                  values are "hour", "day", "week", "month". Default is "day".
-                environment_uuid(str): The optional parameter: The environment_id to filter metrics for 
+                environment_uuid(str): The optional parameter: The environment_id to filter metrics for
                  test executions in a specific environment. Default value is "all".
-                region(str): The optional parameter: The region to filter metrics for test executions in a 
+                region(str): The optional parameter: The region to filter metrics for test executions in a
                  specific region. Default value is "all".
-        """
+        """,
     )
     async def tests(action: str, args: Dict[str, Any], ctx: Context) -> BaseResult:
         test_manager = TestManager(token, ctx)
@@ -122,24 +114,24 @@ def register(mcp, token: Optional[BzmApimToken]):
                 case "create":
                     return await test_manager.create(args["test_name"], args["bucket_key"])
                 case "list":
-                    return await test_manager.list(args["bucket_key"], args.get("limit", 50),
-                                                   args.get("offset", 0))
-                case "get_test_metrics":
-                    return await test_manager.get_test_metrics(args["bucket_key"], args["test_id"],
-                                                               args.get("timeframe", "day"),
-                                                               args.get("environment_uuid", "all"),
-                                                               args.get("region", "all"))
-                case _:
-                    return BaseResult(
-                        error=f"Action {action} not found in tests manager tool"
+                    return await test_manager.list(
+                        args["bucket_key"], args.get("limit", 50), args.get("offset", 0)
                     )
+                case "get_test_metrics":
+                    return await test_manager.get_test_metrics(
+                        args["bucket_key"],
+                        args["test_id"],
+                        args.get("timeframe", "day"),
+                        args.get("environment_uuid", "all"),
+                        args.get("region", "all"),
+                    )
+                case _:
+                    return BaseResult(error=f"Action {action} not found in tests manager tool")
         except httpx.HTTPStatusError:
-            return BaseResult(
-                error=f"HTTP Error: {traceback.format_exc()}"
-            )
+            return BaseResult(error=f"HTTP Error: {traceback.format_exc()}")
         except Exception:
             return BaseResult(
                 error=f"""Error: {traceback.format_exc()}
-                          If you think this is a bug, please contact BlazeMeter support or report issue at 
+                          If you think this is a bug, please contact BlazeMeter support or report issue at
                           https://github.com/Runscope/mcp-bzm-apitest/issues"""
             )

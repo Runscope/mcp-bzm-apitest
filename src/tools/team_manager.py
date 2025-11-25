@@ -1,19 +1,15 @@
-import asyncio
 import logging
-import os
 import traceback
-from pathlib import Path
-from typing import Any, Dict
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import httpx
 from mcp.server.fastmcp import Context
 
-from src.config.token import BzmApimToken
-from src.config.defaults import TOOLS_PREFIX, ACCOUNTS_ENDPOINT, TEAMS_ENDPOINT
-from src.models import BaseResult
-from src.formatters.team import format_teams, format_accounts, format_team_users
 from src.common.api_client import api_request
+from src.config.defaults import ACCOUNTS_ENDPOINT, TEAMS_ENDPOINT, TOOLS_PREFIX
+from src.config.token import BzmApimToken
+from src.formatters.team import format_accounts, format_team_users, format_teams
+from src.models import BaseResult
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -31,23 +27,17 @@ class TeamManager:
             "GET",
             f"{ACCOUNTS_ENDPOINT}",
             result_formatter=format_accounts,
-            params={"include_owner": True}
+            params={"include_owner": True},
         )
 
     async def read(self, team_id: str) -> BaseResult:
         return await api_request(
-            self.token,
-            "GET",
-            f"{TEAMS_ENDPOINT}/{team_id}",
-            result_formatter=format_teams
+            self.token, "GET", f"{TEAMS_ENDPOINT}/{team_id}", result_formatter=format_teams
         )
 
     async def get_team_users(self, team_id: str) -> BaseResult:
         return await api_request(
-            self.token,
-            "GET",
-            f"{TEAMS_ENDPOINT}/{team_id}/people",
-            result_formatter=format_team_users
+            self.token, "GET", f"{TEAMS_ENDPOINT}/{team_id}/people", result_formatter=format_team_users
         )
 
 
@@ -66,7 +56,7 @@ def register(mcp, token: Optional[BzmApimToken]):
         - get_team_users: List all users in a specific team.
             args(dict): Dictionary with the following required parameters:
                 - team_id (str): The ID of the team to get users for.
-        """
+        """,
     )
     async def teams(action: str, args: Dict[str, Any], ctx: Context) -> BaseResult:
         team_manager = TeamManager(token, ctx)
@@ -79,13 +69,9 @@ def register(mcp, token: Optional[BzmApimToken]):
                 case "get_team_users":
                     return await team_manager.get_team_users(args["team_id"])
                 case _:
-                    return BaseResult(
-                        error=f"Action {action} not found in teams manager tool"
-                    )
+                    return BaseResult(error=f"Action {action} not found in teams manager tool")
         except httpx.HTTPStatusError:
-            return BaseResult(
-                error=f"HTTP Error: {traceback.format_exc()}"
-            )
+            return BaseResult(error=f"HTTP Error: {traceback.format_exc()}")
         except Exception:
             return BaseResult(
                 error=f"""Error: {traceback.format_exc()}

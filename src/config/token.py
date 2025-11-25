@@ -1,17 +1,19 @@
 import os
+from functools import lru_cache
 from pathlib import Path
 from typing import Union
-from functools import lru_cache
+
 from dotenv import load_dotenv
 
 
 class BzmApimTokenError(Exception):
     """Error when constructing or loading BzmApimToken."""
+
     pass
 
 
 class BzmApimToken:
-    __slots__ = ("token")
+    __slots__ = "token"
 
     def __init__(self, token: str):
         if not token or not isinstance(token, str):
@@ -30,8 +32,7 @@ class BzmApimToken:
             load_dotenv(dotenv_path=p)
             token_val = os.getenv("BZM_API_TEST_TOKEN")
         except Exception as e:
-            raise BzmApimTokenError(
-                f"Error reading/parsing Token from {p!r}: {e}") from e
+            raise BzmApimTokenError(f"Error reading/parsing Token from {p!r}: {e}") from e
 
         return cls(token=token_val)
 

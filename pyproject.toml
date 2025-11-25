@@ -33,6 +33,13 @@ mcp-bzm-apitest = "main:main"
 packages = ["src", "src.common", "src.config", "src.formatters", "src.models", "src.tools"]
 py-modules = ["main"]
 
-[tool.pycodestyle]
+[tool.flake8]
 max-line-length = 108
+extend-ignore = ["E203", "W503"]
+
+[tool.black]
+line-length = 108
+
+[tool.isort]
+profile = "black"
 

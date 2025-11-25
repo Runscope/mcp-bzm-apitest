@@ -1,19 +1,15 @@
-import asyncio
 import logging
-import os
 import traceback
-from pathlib import Path
-from typing import Any, Dict
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import httpx
 from mcp.server.fastmcp import Context
 
-from src.config.token import BzmApimToken
-from src.config.defaults import TOOLS_PREFIX, TEST_ENVIRONMENT_ENDPOINT
-from src.models import BaseResult
-from src.formatters.environment import format_environments
 from src.common.api_client import api_request
+from src.config.defaults import TEST_ENVIRONMENT_ENDPOINT, TOOLS_PREFIX
+from src.config.token import BzmApimToken
+from src.formatters.environment import format_environments
+from src.models import BaseResult
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -30,7 +26,7 @@ class EnvironmentManager:
             self.token,
             "GET",
             f"{TEST_ENVIRONMENT_ENDPOINT.format(bucket_key, test_id)}/{environment_id}",
-            result_formatter=format_environments
+            result_formatter=format_environments,
         )
         return bucket_result
 
@@ -39,7 +35,7 @@ class EnvironmentManager:
             self.token,
             "GET",
             f"{TEST_ENVIRONMENT_ENDPOINT.format(bucket_key, test_id)}",
-            result_formatter=format_environments
+            result_formatter=format_environments,
         )
 
 
@@ -53,34 +49,32 @@ def register(mcp, token: Optional[BzmApimToken]):
         - list: List all the environments for a given test.
             args(dict): Dictionary with the following required parameters:
                 bucket_key(str): The required parameter. The id of the bucket where the test resides.
-                test_id(str): The required parameter. The id of the test whose environments are to be listed.
+                test_id(str): The required parameter. The id of the test whose environments are to be
+                 listed.
         - read: Read a test environment. Get the detailed information of a test environment.
-			args(dict): Dictionary with the following required parameters:
-				bucket_key(str): The required parameter. The id of the bucket where the test resides.
-				test_id(str): The required parameter. The id of the test where the environment resides.
-				environment_id(str): The required parameter. The id of the environment to read.
-        """
+            args(dict): Dictionary with the following required parameters:
+                bucket_key(str): The required parameter. The id of the bucket where the test resides.
+                test_id(str): The required parameter. The id of the test where the environment resides.
+                environment_id(str): The required parameter. The id of the environment to read.
+        """,
     )
     async def environments(action: str, args: Dict[str, Any], ctx: Context) -> BaseResult:
         environment_manager = EnvironmentManager(token, ctx)
         try:
             match action:
                 case "read":
-                    return await environment_manager.read(args["bucket_key"], args["test_id"],
-                                                          args['environment_id'])
+                    return await environment_manager.read(
+                        args["bucket_key"], args["test_id"], args["environment_id"]
+                    )
                 case "list":
                     return await environment_manager.list(args["bucket_key"], args["test_id"])
                 case _:
-                    return BaseResult(
-                        error=f"Action {action} not found in environments manager tool"
-                    )
+                    return BaseResult(error=f"Action {action} not found in environments manager tool")
         except httpx.HTTPStatusError:
-            return BaseResult(
-                error=f"HTTP Error: {traceback.format_exc()}"
-            )
+            return BaseResult(error=f"HTTP Error: {traceback.format_exc()}")
         except Exception:
             return BaseResult(
                 error=f"""Error: {traceback.format_exc()}
-                          If you think this is a bug, please contact BlazeMeter support or report issue at 
+                          If you think this is a bug, please contact BlazeMeter support or report issue at
                           https://github.com/Runscope/mcp-bzm-apitest/issues"""
             )
