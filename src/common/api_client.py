@@ -41,6 +41,7 @@ async def api_request(
     headers = kwargs.pop("headers", {})
     headers["Authorization"] = f"Bearer {token}"
     headers["User-Agent"] = f"bzm-apitest-mcp/{__version__} ({ua_part})"
+    hint = kwargs.pop("hint", [])
 
     timeout = httpx.Timeout(connect=15.0, read=60.0, write=15.0, pool=60.0)
 
@@ -64,7 +65,7 @@ async def api_request(
                 has_more=response_dict.get("total", 0)
                 - (response_dict.get("skip", 0) + response_dict.get("limit", 0))
                 > 0,
-                hint=kwargs.get("hint", []),
+                hint=hint,
             )
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 403:
