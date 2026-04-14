@@ -69,6 +69,10 @@ You can provide the API token to the MCP client using one of the following metho
 
 At this time, we support the following methods for running the server locally:
 
+Using OS-specific MCP binaries (recommended)
+Download the appropriate binary for your operating system and run it directly.
+See the example below for setup instructions.
+
 Using the source code (recommended for development)
 You’ll need Python 3.11+ installed along with the UV package manager.
 See the example below for setup instructions.
@@ -77,10 +81,44 @@ Using Docker
 Run the server in a containerized environment using Docker.
 See the example below for details.
 
-Using OS-specific MCP binaries
-Prebuilt binaries for supported operating systems will be available soon.
-(Coming soon)
+---
 
+**Quick Setup with CLI Tool** ⚡
+
+The easiest way to configure your MCP client is using our interactive CLI tool:
+
+1. **Download the appropriate binary** for your operating system from the [`dist/`](./dist) folder
+
+> [!NOTE]
+> Choose the binary that matches your OS (Windows, macOS, Linux)
+2. **Execute or Double-click the binary** to launch the interactive configuration tool
+3. **The tool automatically generates** the JSON configuration file for you
+
+> [!IMPORTANT]
+> For macOS: You may encounter a security alert saying "Apple could not verify ‘mcp-bzm-apitest’ is free of malware." To resolve this:
+> 1. Go to **System Settings** → **Privacy & Security** → **Security**
+> 2. Look for the blocked application and click **"Allow Anyway"**
+> 3. Try running the binary again
+---
+
+**Manual Client Configuration (Binary Installation)**
+
+1. **Download the binary** for your operating system from the [`dist/`](./dist) folder
+2. **Configure your MCP client** with the following settings:
+
+```json
+{
+  "mcpServers": {
+    "BlazeMeter API Test MCP": {
+      "command": "/path/to/mcp-bzm-apitest-binary",
+      "args": ["--mcp"],
+      "env": {
+        "BZM_API_TEST_TOKEN_FILE": "/path/to/your/bzm_api_test_token.env"
+      }
+    }
+  }
+}
+```
 ---
 
 **Manual Client Configuration (From Remote Source Code)**
@@ -109,8 +147,6 @@ Prebuilt binaries for supported operating systems will be available soon.
 > uvx installs and runs the package and its dependencies in a temporary environment.
 > You can change to any version that has been released or any branch you want.
 > For more details on the uv/uvx arguments used, please refer to the official [uv documentation](https://docs.astral.sh/uv/).
-
-</details>
 
 ---
 

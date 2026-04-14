@@ -1,9 +1,7 @@
 name: Build Multi-Platform Docker Images
 
 on:
-  workflow_run:
-    workflows: ["Build Binaries"]
-    types: [completed]
+  push:
     branches: [master]
   release:
     types: [published]
@@ -22,7 +20,6 @@ jobs:
   build-docker:
     name: Build Multi-Platform Docker Image
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' || github.event_name == 'release' }}
 
     permissions:
       contents: read
@@ -33,40 +30,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Download artifacts from Build Binaries workflow
-      uses: dawidd6/action-download-artifact@v6
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        workflow: build.yaml
-        run_id: ${{ (github.event_name == 'workflow_dispatch' || github.event_name == 'release') && '' || github.event.workflow_run.id }}
-        name_is_regexp: true
-        name: mcp-bzm-apitest-.*
-        path: artifacts/
-
-    - name: Organize binaries for Docker build
+    - name: Verify Linux binary exists in dist/
       run: |
-        mkdir -p dist/
-        # Copy and rename binaries to match Docker expectations
-        if [ -f artifacts/mcp-bzm-apitest-linux-amd64/mcp-bzm-apitest-linux-amd64 ]; then
-          cp artifacts/mcp-bzm-apitest-linux-amd64/mcp-bzm-apitest-linux-amd64 dist/mcp-bzm-apitest-linux-amd64
-          echo "AMD64 binary found"
-        else
-          echo "AMD64 binary missing"
+        if [ ! -f dist/mcp-bzm-apitest-linux-amd64 ]; then
+          echo "ERROR: dist/mcp-bzm-apitest-linux-amd64 not found"
           exit 1
         fi
-        
-        # Check for ARM64 binary (optional for now)
-        if [ -f artifacts/mcp-bzm-apitest-linux-arm64/mcp-bzm-apitest-linux-arm64 ]; then
-          cp artifacts/mcp-bzm-apitest-linux-arm64/mcp-bzm-apitest-linux-arm64 dist/mcp-bzm-apitest-linux-arm64
-          echo "ARM64 binary found"
-          echo "PLATFORMS=linux/amd64,linux/arm64" >> $GITHUB_ENV
-        else
-          echo "ARM64 binary missing - building AMD64 only"
-          echo "PLATFORMS=linux/amd64" >> $GITHUB_ENV
-        fi
-        
-        echo "Available binaries:"
-        ls -la dist/
+        echo "AMD64 binary found"
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -95,7 +65,7 @@ jobs:
           ${{ env.GCP_PROJECT_ID != '' && format('{0}/{1}/{2}/mcp-bzm-apitest', env.GCP_REGISTRY, env.GCP_PROJECT_ID, env.GCP_REPOSITORY) || '' }}
         tags: |
           type=ref,event=branch
-          type=ref,event=pr  
+          type=ref,event=pr
           type=semver,pattern={{version}},enable=${{ github.event_name == 'release' }}
           type=semver,pattern={{major}}.{{minor}},enable=${{ github.event_name == 'release' }}
           type=semver,pattern={{major}},enable=${{ github.event_name == 'release' }}
@@ -105,7 +75,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
-        platforms: ${{ env.PLATFORMS }}
+        platforms: linux/amd64
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}

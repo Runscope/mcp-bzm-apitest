@@ -23,19 +23,8 @@ RUN apt-get update -y && apt-get upgrade -y && apt-get clean && rm -rf /var/lib/
 # Create a non-root user
 RUN groupadd -r mcp-bzm-apitest && useradd -r -g mcp-bzm-apitest mcp-bzm-apitest
 
-ARG TARGETPLATFORM
-
-# Copy all pre-built binaries
-COPY dist/ ./dist/
-
-# Select and copy the appropriate binary based on target platform
-RUN case "${TARGETPLATFORM}" in \
-    "linux/amd64") cp ./dist/mcp-bzm-apitest-linux-amd64 ./mcp-bzm-apitest ;; \
-    "linux/arm64") cp ./dist/mcp-bzm-apitest-linux-arm64 ./mcp-bzm-apitest ;; \
-    *) echo "Unsupported platform: ${TARGETPLATFORM}. Supported: linux/amd64, linux/arm64" && exit 1 ;; \
-    esac && \
-    echo "Selected binary for platform: ${TARGETPLATFORM}" && \
-    rm -rf ./dist/
+# Copy pre-built binary
+COPY dist/mcp-bzm-apitest-linux-amd64 ./mcp-bzm-apitest
 
 
 RUN chmod +x ./mcp-bzm-apitest && \
