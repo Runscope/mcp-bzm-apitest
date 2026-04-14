@@ -74,7 +74,7 @@ jobs:
 
     - name: Check code formatting with black
       run: |
-        black --check src
+        black --check --target-version py311 src
 
     - name: Check import sorting with isort
       run: |
