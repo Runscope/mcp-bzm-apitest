@@ -1,4 +1,7 @@
-BZM_APIM_BASE_URL: str = "https://api.runscope.com"
+import os
+
+BZM_APIM_DEFAULT_BASE_URL: str = "https://api.runscope.com"
+BZM_APIM_BASE_URL: str = os.getenv("BZM_API_TEST_BASE_URL", BZM_APIM_DEFAULT_BASE_URL)
 TOOLS_PREFIX: str = "blazemeter_apitest"
 
 ACCOUNTS_ENDPOINT: str = "/account"

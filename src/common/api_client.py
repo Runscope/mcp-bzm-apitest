@@ -7,7 +7,7 @@ from typing import Callable, Optional
 
 import httpx
 
-from src.config.defaults import BZM_APIM_BASE_URL
+import src.config.defaults as defaults
 from src.config.token import BzmApimToken
 from src.config.version import __version__
 from src.models import BaseResult
@@ -45,7 +45,7 @@ async def api_request(
 
     timeout = httpx.Timeout(connect=15.0, read=60.0, write=15.0, pool=60.0)
 
-    async with httpx.AsyncClient(base_url=BZM_APIM_BASE_URL, timeout=timeout) as client:
+    async with httpx.AsyncClient(base_url=defaults.BZM_APIM_BASE_URL, timeout=timeout) as client:
         try:
             resp = await client.request(method, endpoint, headers=headers, **kwargs)
             resp.raise_for_status()

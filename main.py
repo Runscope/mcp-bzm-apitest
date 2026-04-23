@@ -61,7 +61,11 @@ def get_api_token():
     return token
 
 
-def run(log_level: str = "CRITICAL"):
+def run(log_level: str = "CRITICAL", base_url: str = None):
+    if base_url:
+        import src.config.defaults as defaults
+        defaults.BZM_APIM_BASE_URL = base_url
+
     token = get_api_token()
     instructions = """
     # BlazeMeter API Test MCP Server
@@ -120,11 +124,19 @@ def main():
         help="Logging level (default: CRITICAL = critical errors only)"
     )
 
+    parser.add_argument(
+        "--base-url",
+        default=None,
+        help="Base URL for the API (default: https://api.runscope.com). "
+             "Can also be set via BZM_API_TEST_BASE_URL env var. "
+             "Example: https://api.staging.runscope.com"
+    )
+
     args = parser.parse_args()
     init_logging(args.log_level)
 
     if args.mcp:
-        run(log_level=args.log_level.upper())
+        run(log_level=args.log_level.upper(), base_url=args.base_url)
     else:
 
         logo_ascii = (

@@ -5,6 +5,7 @@ import pytest
 import httpx
 from unittest.mock import Mock, AsyncMock, patch
 from src.common.api_client import api_request
+import src.config.defaults as defaults
 from src.config.token import BzmApimToken
 from src.models import BaseResult
 
@@ -219,4 +220,79 @@ class TestApiClient:
 
             assert result.has_more is True
             assert result.total == 100
+
+    async def test_api_request_uses_default_base_url(self):
+        """Test API request uses production base URL by default"""
+        token = BzmApimToken("test_token")
+        original_url = defaults.BZM_APIM_BASE_URL
+
+        mock_response = Mock()
+        mock_response.json.return_value = {"data": [], "error": None}
+        mock_response.raise_for_status = Mock()
+
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_client.return_value.__aenter__.return_value.request = AsyncMock(
+                return_value=mock_response
+            )
+            await api_request(token, "GET", "/test/endpoint")
+
+            mock_client.assert_called_once()
+            call_kwargs = mock_client.call_args[1]
+            assert call_kwargs["base_url"] == original_url
+
+    async def test_api_request_uses_custom_base_url(self):
+        """Test API request uses custom base URL when configured"""
+        token = BzmApimToken("test_token")
+        original_url = defaults.BZM_APIM_BASE_URL
+        staging_url = "https://api.staging.runscope.com"
+
+        mock_response = Mock()
+        mock_response.json.return_value = {"data": [], "error": None}
+        mock_response.raise_for_status = Mock()
+
+        try:
+            defaults.BZM_APIM_BASE_URL = staging_url
+
+            with patch("httpx.AsyncClient") as mock_client:
+                mock_client.return_value.__aenter__.return_value.request = AsyncMock(
+                    return_value=mock_response
+                )
+                await api_request(token, "GET", "/test/endpoint")
+
+                mock_client.assert_called_once()
+                call_kwargs = mock_client.call_args[1]
+                assert call_kwargs["base_url"] == staging_url
+        finally:
+            defaults.BZM_APIM_BASE_URL = original_url
+
+
+class TestBaseUrlConfig:
+    """Test cases for base URL configuration"""
+
+    def test_default_base_url_is_production(self):
+        """Test that default base URL points to production"""
+        assert defaults.BZM_APIM_DEFAULT_BASE_URL == "https://api.runscope.com"
+
+    def test_base_url_env_var_override(self, monkeypatch):
+        """Test that BZM_API_TEST_BASE_URL env var overrides the default"""
+        staging_url = "https://api.staging.runscope.com"
+        monkeypatch.setenv("BZM_API_TEST_BASE_URL", staging_url)
+
+        import importlib
+        importlib.reload(defaults)
+
+        assert defaults.BZM_APIM_BASE_URL == staging_url
+
+        # Restore
+        monkeypatch.delenv("BZM_API_TEST_BASE_URL", raising=False)
+        importlib.reload(defaults)
+
+    def test_base_url_defaults_to_production_without_env_var(self, monkeypatch):
+        """Test that base URL defaults to production when env var is not set"""
+        monkeypatch.delenv("BZM_API_TEST_BASE_URL", raising=False)
+
+        import importlib
+        importlib.reload(defaults)
+
+        assert defaults.BZM_APIM_BASE_URL == "https://api.runscope.com"
 
