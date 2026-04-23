@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mcp-bzm-apitest"
-version = "1.0.0"
+version = "1.1.0"
 description = "MCP Server for BlazeMeter API Monitoring (Runscope)"
 readme = "README.md"
 requires-python = ">=3.11"
