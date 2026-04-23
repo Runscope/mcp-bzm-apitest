@@ -70,7 +70,7 @@ You can provide the API token to the MCP client using one of the following metho
 At this time, we support the following methods for running the server locally:
 
 Using OS-specific MCP binaries (recommended)
-Download the appropriate binary for your operating system and run it directly.
+Download the appropriate binary for your operating system from the [releases page](https://github.com/Runscope/mcp-bzm-apitest/releases) and run it directly.
 See the example below for setup instructions.
 
 Using the source code (recommended for development)
@@ -87,7 +87,7 @@ See the example below for details.
 
 The easiest way to configure your MCP client is using our interactive CLI tool:
 
-1. **Download the appropriate binary** for your operating system from the [`dist/`](./dist) folder
+1. **Download the appropriate binary** for your operating system from the [releases page](https://github.com/Runscope/mcp-bzm-apitest/releases)
 
 > [!NOTE]
 > Choose the binary that matches your OS (Windows, macOS, Linux)
@@ -103,7 +103,7 @@ The easiest way to configure your MCP client is using our interactive CLI tool:
 
 **Manual Client Configuration (Binary Installation)**
 
-1. **Download the binary** for your operating system from the [`dist/`](./dist) folder
+1. **Download the binary** for your operating system from the [releases page](https://github.com/Runscope/mcp-bzm-apitest/releases)
 2. **Configure your MCP client** with the following settings:
 
 ```json
