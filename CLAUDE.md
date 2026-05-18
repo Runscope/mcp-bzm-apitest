@@ -23,9 +23,12 @@ pytest tests/test_api_client.py::TestApiClient::test_api_request_success -v  # S
 make lint                   # flake8 + black --check + isort --check-only
 make format                 # black + isort (auto-fix)
 
-# Build binary (requires build deps)
+# Build standalone binary (requires build deps — not needed for Docker)
 pip install -e ".[build]"   # install PyInstaller (build-only dependency)
 python build.py             # PyInstaller → dist/mcp-bzm-apitest-{os}-{arch}
+
+# Build Docker image (uses Python runtime, no binary needed)
+docker build -t mcp-bzm-apitest .
 ```
 
 ## Architecture
