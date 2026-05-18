@@ -12,7 +12,6 @@ from src.formatters.schedule import format_schedules
 from src.models import BaseResult
 from src.models.schedule import CreateSchedule
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 

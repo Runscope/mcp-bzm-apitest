@@ -11,7 +11,6 @@ from src.config.token import BzmApimToken
 from src.formatters.bucket import format_buckets
 from src.models import BaseResult
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 

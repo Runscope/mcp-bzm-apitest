@@ -11,7 +11,6 @@ from src.config.token import BzmApimToken
 from src.formatters.team import format_accounts, format_team_users, format_teams
 from src.models import BaseResult
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 

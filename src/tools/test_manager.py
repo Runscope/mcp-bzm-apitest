@@ -11,7 +11,6 @@ from src.config.token import BzmApimToken
 from src.formatters.test import format_test_metrics, format_tests
 from src.models import BaseResult
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 

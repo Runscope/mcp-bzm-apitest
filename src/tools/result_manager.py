@@ -20,7 +20,6 @@ from src.formatters.result import (
 )
 from src.models import BaseResult
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 

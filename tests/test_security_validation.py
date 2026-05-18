@@ -158,7 +158,8 @@ class TestDataValidation:
         for token_str in valid_tokens:
             token = BzmApimToken(token_str)
             assert token.token == token_str
-            assert token_str in repr(token)
+            # Raw token must not appear in repr — it is masked
+            assert token_str not in repr(token)
 
     async def test_assertion_value_escaping(self, mock_token, mock_context):
         """Test that assertion values are properly handled"""
