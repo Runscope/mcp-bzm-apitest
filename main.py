@@ -57,7 +57,7 @@ def get_api_token():
             # Other errors (file not found, permissions, etc.) - also handled by tools
             pass
     elif is_docker:
-        token = BzmApimToken(os.getenv("BZM_API_TEST_TOKEN"))
+        token = BzmApimToken(os.getenv("BZM_API_TEST_TOKEN")).token
     return token
 
 
