@@ -12,13 +12,13 @@ class TestBzmApimToken:
         """Test creating a valid token"""
         token = BzmApimToken("valid_token_12345")
         assert token.token == "valid_token_12345"
-        assert "valid_token_12345" in repr(token)
+        assert "valid_token_12345" not in repr(token)
 
     def test_token_with_whitespace(self):
         """Test token preserves whitespace (user responsible for trimming)"""
         token = BzmApimToken("  token_with_spaces  ")
         assert token.token == "  token_with_spaces  "
-        assert "token_with_spaces" in repr(token)
+        assert "token_with_spaces" not in repr(token)
 
     def test_empty_token_raises_error(self):
         """Test that empty token raises error"""
@@ -43,10 +43,15 @@ class TestBzmApimToken:
         assert token1.token == token2.token
 
     def test_token_representation(self):
-        """Test token string representation"""
+        """Test token string representation masks the secret value"""
         token = BzmApimToken("test_token")
-        assert "BzmApimToken" in repr(token)
-        assert "test_token" in repr(token)
+        r = repr(token)
+        assert "BzmApimToken" in r
+        # Raw token must not appear in repr
+        assert "test_token" not in r
+        # First 4 chars are shown, rest masked
+        assert "test" in r
+        assert "****" in r
 
     def test_token_can_be_used_in_format_string(self):
         """Test token can be used in f-strings via .token attribute"""

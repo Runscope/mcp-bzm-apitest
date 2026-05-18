@@ -17,7 +17,7 @@ class BzmApimToken:
 
     def __init__(self, token: str):
         if not token or not isinstance(token, str):
-            raise BzmApimTokenError(f"Invalid Token : {token!r}")
+            raise BzmApimTokenError("Invalid Token: token must be a non-empty string")
 
         self.token = token
 
@@ -37,4 +37,5 @@ class BzmApimToken:
         return cls(token=token_val)
 
     def __repr__(self):
-        return f"<BzmApimToken={self.token!r}>"
+        masked = f"{self.token[:4]}{'*' * (len(self.token) - 4)}" if len(self.token) > 4 else "****"
+        return f"<BzmApimToken={masked!r}>"
