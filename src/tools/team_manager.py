@@ -6,6 +6,13 @@ from mcp.server.fastmcp import Context
 
 from src.common.api_client import api_request
 from src.common.errors import UNEXPECTED_ERROR_MESSAGE, http_error_message
+from src.common.telemetry import (
+    extract_trace_context,
+    get_meta_from_ctx,
+    http_status_to_error_type,
+    record_span_error,
+    tool_span,
+)
 from src.config.defaults import ACCOUNTS_ENDPOINT, TEAMS_ENDPOINT, TOOLS_PREFIX
 from src.config.token import BzmApimToken
 from src.formatters.team import format_accounts, format_team_users, format_teams
@@ -63,18 +70,23 @@ def register(mcp, token: Optional[BzmApimToken]):
     )
     async def teams(action: str, args: Dict[str, Any], ctx: Context) -> BaseResult:
         team_manager = TeamManager(token, ctx)
-        try:
-            match action:
-                case "list":
-                    return await team_manager.list()
-                case "read":
-                    return await team_manager.read(args["team_id"])
-                case "get_team_users":
-                    return await team_manager.get_team_users(args["team_id"])
-                case _:
-                    return BaseResult(error=f"Action {action} not found in teams manager tool")
-        except httpx.HTTPStatusError as e:
-            return BaseResult(error=http_error_message(e))
-        except Exception as e:
-            logger.exception("Unexpected error in teams tool: %s", e)
-            return BaseResult(error=UNEXPECTED_ERROR_MESSAGE)
+        meta = get_meta_from_ctx(ctx)
+        parent_context = extract_trace_context(meta)
+        async with tool_span(f"{TOOLS_PREFIX}_teams", action, parent_context) as span:
+            try:
+                match action:
+                    case "list":
+                        return await team_manager.list()
+                    case "read":
+                        return await team_manager.read(args["team_id"])
+                    case "get_team_users":
+                        return await team_manager.get_team_users(args["team_id"])
+                    case _:
+                        return BaseResult(error=f"Action {action} not found in teams manager tool")
+            except httpx.HTTPStatusError as e:
+                record_span_error(span, http_status_to_error_type(e.response.status_code))
+                return BaseResult(error=http_error_message(e))
+            except Exception as e:
+                record_span_error(span, "unexpected_error")
+                logger.exception("Unexpected error in teams tool: %s", e)
+                return BaseResult(error=UNEXPECTED_ERROR_MESSAGE)

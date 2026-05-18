@@ -23,6 +23,7 @@ dependencies = [
     "pydantic-core>=2.41.4",
     "defusedxml>=0.7.1",
     "nh3>=0.3.2",
+    "opentelemetry-api>=1.20.0",
 ]
 
 [project.optional-dependencies]
@@ -34,6 +35,9 @@ test = [
 ]
 build = [
     "pyinstaller>=6.16.0",
+]
+telemetry = [
+    "opentelemetry-sdk>=1.20.0",
 ]
 
 [project.urls]

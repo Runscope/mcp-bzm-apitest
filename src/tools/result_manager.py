@@ -7,6 +7,13 @@ from mcp.server.fastmcp import Context
 
 from src.common.api_client import api_request
 from src.common.errors import UNEXPECTED_ERROR_MESSAGE, http_error_message
+from src.common.telemetry import (
+    extract_trace_context,
+    get_meta_from_ctx,
+    http_status_to_error_type,
+    record_span_error,
+    tool_span,
+)
 from src.config.defaults import (
     BUCKET_LEVEL_RESULTS_ENDPOINT,
     RESULTS_ENDPOINT,
@@ -132,26 +139,31 @@ def register(mcp, token: Optional[BzmApimToken]):
     )
     async def results(action: str, args: Dict[str, Any], ctx: Context) -> BaseResult:
         result_manager = ResultManager(token, ctx)
-        try:
-            match action:
-                case "start" | "start_bucket_level_run":
-                    return await result_manager.start(args["trigger_url"])
-                case "read":
-                    return await result_manager.read(
-                        args["bucket_key"], args["test_id"], args["test_run_id"]
-                    )
-                case "read_bucket_level_run":
-                    return await result_manager.read_bucket_level_test_run(
-                        args["bucket_key"], args["bucket_level_test_run_id"]
-                    )
-                case "list":
-                    return await result_manager.list(
-                        args["bucket_key"], args["test_id"], args.get("limit", 10)
-                    )
-                case _:
-                    return BaseResult(error=f"Action {action} not found in results manager tool")
-        except httpx.HTTPStatusError as e:
-            return BaseResult(error=http_error_message(e))
-        except Exception as e:
-            logger.exception("Unexpected error in results tool: %s", e)
-            return BaseResult(error=UNEXPECTED_ERROR_MESSAGE)
+        meta = get_meta_from_ctx(ctx)
+        parent_context = extract_trace_context(meta)
+        async with tool_span(f"{TOOLS_PREFIX}_results", action, parent_context) as span:
+            try:
+                match action:
+                    case "start" | "start_bucket_level_run":
+                        return await result_manager.start(args["trigger_url"])
+                    case "read":
+                        return await result_manager.read(
+                            args["bucket_key"], args["test_id"], args["test_run_id"]
+                        )
+                    case "read_bucket_level_run":
+                        return await result_manager.read_bucket_level_test_run(
+                            args["bucket_key"], args["bucket_level_test_run_id"]
+                        )
+                    case "list":
+                        return await result_manager.list(
+                            args["bucket_key"], args["test_id"], args.get("limit", 10)
+                        )
+                    case _:
+                        return BaseResult(error=f"Action {action} not found in results manager tool")
+            except httpx.HTTPStatusError as e:
+                record_span_error(span, http_status_to_error_type(e.response.status_code))
+                return BaseResult(error=http_error_message(e))
+            except Exception as e:
+                record_span_error(span, "unexpected_error")
+                logger.exception("Unexpected error in results tool: %s", e)
+                return BaseResult(error=UNEXPECTED_ERROR_MESSAGE)

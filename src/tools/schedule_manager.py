@@ -6,6 +6,13 @@ from mcp.server.fastmcp import Context
 
 from src.common.api_client import api_request
 from src.common.errors import UNEXPECTED_ERROR_MESSAGE, http_error_message
+from src.common.telemetry import (
+    extract_trace_context,
+    get_meta_from_ctx,
+    http_status_to_error_type,
+    record_span_error,
+    tool_span,
+)
 from src.config.defaults import SCHEDULES_ENDPOINT, TOOLS_PREFIX
 from src.config.token import BzmApimToken
 from src.formatters.schedule import format_schedules
@@ -96,22 +103,27 @@ def register(mcp, token: Optional[BzmApimToken]):
     )
     async def schedules(action: str, args: Dict[str, Any], ctx: Context) -> BaseResult:
         schedule_manager = ScheduleManager(token, ctx)
-        try:
-            match action:
-                case "read":
-                    return await schedule_manager.read(
-                        args["bucket_key"], args["test_id"], args["schedule_id"]
-                    )
-                case "create":
-                    return await schedule_manager.create(
-                        args["bucket_key"], args["test_id"], args["environment_id"], args["interval"]
-                    )
-                case "list":
-                    return await schedule_manager.list(args["bucket_key"], args["test_id"])
-                case _:
-                    return BaseResult(error=f"Action {action} not found in schedules manager tool")
-        except httpx.HTTPStatusError as e:
-            return BaseResult(error=http_error_message(e))
-        except Exception as e:
-            logger.exception("Unexpected error in schedules tool: %s", e)
-            return BaseResult(error=UNEXPECTED_ERROR_MESSAGE)
+        meta = get_meta_from_ctx(ctx)
+        parent_context = extract_trace_context(meta)
+        async with tool_span(f"{TOOLS_PREFIX}_schedules", action, parent_context) as span:
+            try:
+                match action:
+                    case "read":
+                        return await schedule_manager.read(
+                            args["bucket_key"], args["test_id"], args["schedule_id"]
+                        )
+                    case "create":
+                        return await schedule_manager.create(
+                            args["bucket_key"], args["test_id"], args["environment_id"], args["interval"]
+                        )
+                    case "list":
+                        return await schedule_manager.list(args["bucket_key"], args["test_id"])
+                    case _:
+                        return BaseResult(error=f"Action {action} not found in schedules manager tool")
+            except httpx.HTTPStatusError as e:
+                record_span_error(span, http_status_to_error_type(e.response.status_code))
+                return BaseResult(error=http_error_message(e))
+            except Exception as e:
+                record_span_error(span, "unexpected_error")
+                logger.exception("Unexpected error in schedules tool: %s", e)
+                return BaseResult(error=UNEXPECTED_ERROR_MESSAGE)

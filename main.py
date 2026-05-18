@@ -7,11 +7,12 @@ from typing import Literal, cast
 
 from mcp.server.fastmcp import FastMCP
 
+from src.common.telemetry import init_telemetry
 from src.config.token import BzmApimToken, BzmApimTokenError
-from src.config.version import __version__, __executable__
+from src.config.version import __executable__, __version__
 from src.server import register_tools
 
-BLAZEMETER_APIM_KEY_FILE_PATH = os.getenv('BZM_API_TEST_TOKEN_FILE')
+BLAZEMETER_APIM_KEY_FILE_PATH = os.getenv("BZM_API_TEST_TOKEN_FILE")
 
 LOG_LEVELS = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
@@ -30,19 +31,18 @@ def get_api_token():
     global BLAZEMETER_APIM_KEY_FILE_PATH
 
     # Verify if running inside Docker container
-    is_docker = os.getenv('MCP_DOCKER', 'false').lower() == 'true'
+    is_docker = os.getenv("MCP_DOCKER", "false").lower() == "true"
     token = None
 
     # Option1: If token is provided directly in the mcp.json file
-    if os.getenv('BZM_API_TEST_TOKEN'):
-        token = BzmApimToken(os.getenv('BZM_API_TEST_TOKEN')).token
+    if os.getenv("BZM_API_TEST_TOKEN"):
+        token = BzmApimToken(os.getenv("BZM_API_TEST_TOKEN")).token
         return token
 
     # Option2: Token is provided in the .env file
     # 2.a - User sets BZM_APIM_TOKEN_FILE environment variable to point to the file location
     # 2.b - If not set, we look for the file in the same location as the executable
-    local_api_key_file = os.path.join(
-        os.path.dirname(__executable__), "bzm_api_test_token.env")
+    local_api_key_file = os.path.join(os.path.dirname(__executable__), "bzm_api_test_token.env")
 
     if not BLAZEMETER_APIM_KEY_FILE_PATH and os.path.exists(local_api_key_file):
         BLAZEMETER_APIM_KEY_FILE_PATH = local_api_key_file
@@ -57,15 +57,17 @@ def get_api_token():
             # Other errors (file not found, permissions, etc.) - also handled by tools
             pass
     elif is_docker:
-        token = BzmApimToken(os.getenv('BZM_API_TEST_TOKEN'))
+        token = BzmApimToken(os.getenv("BZM_API_TEST_TOKEN"))
     return token
 
 
 def run(log_level: str = "CRITICAL", base_url: str = None):
     if base_url:
         import src.config.defaults as defaults
+
         defaults.BZM_APIM_BASE_URL = base_url
 
+    init_telemetry("mcp-bzm-apitest", __version__)
     token = get_api_token()
     instructions = """
     # BlazeMeter API Test MCP Server
@@ -96,8 +98,9 @@ def run(log_level: str = "CRITICAL", base_url: str = None):
             steps: Test steps belong to a particular test.
             results: Test execution results belong to a particular test.
     """
-    mcp = FastMCP("blazemeter-apitest-mcp", instructions=instructions,
-                  log_level=cast(LOG_LEVELS, log_level))
+    mcp = FastMCP(
+        "blazemeter-apitest-mcp", instructions=instructions, log_level=cast(LOG_LEVELS, log_level)
+    )
     register_tools(mcp, token)
     mcp.run(transport="stdio")
 
@@ -105,31 +108,23 @@ def run(log_level: str = "CRITICAL", base_url: str = None):
 def main():
     parser = argparse.ArgumentParser(prog="mcp-bzm-apitest")
 
-    parser.add_argument(
-        "--version",
-        action="version",
-        version=f"%(prog)s {__version__}"
-    )
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
 
-    parser.add_argument(
-        "--mcp",
-        action="store_true",
-        help="Execute MCP Server"
-    )
+    parser.add_argument("--mcp", action="store_true", help="Execute MCP Server")
 
     parser.add_argument(
         "--log-level",
         default="CRITICAL",  # By default, only critical errors
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-        help="Logging level (default: CRITICAL = critical errors only)"
+        help="Logging level (default: CRITICAL = critical errors only)",
     )
 
     parser.add_argument(
         "--base-url",
         default=None,
         help="Base URL for the API (default: https://api.runscope.com). "
-             "Can also be set via BZM_API_TEST_BASE_URL env var. "
-             "Example: https://api.staging.runscope.com"
+        "Can also be set via BZM_API_TEST_BASE_URL env var. "
+        "Example: https://api.staging.runscope.com",
     )
 
     args = parser.parse_args()
@@ -169,10 +164,13 @@ def main():
             print(" ")
             print(
                 " Copy the BlazeMeter API Test Token file (bzm_api_test_token.env) to the same location of"
-                " this executable.")
+                " this executable."
+            )
             print(" ")
             print(" How to obtain the BZM API Test Access Token:")
-            print("https://help.blazemeter.com/apidocs/api-monitoring/authentication.htm?tocpath=API%20Monitoring%7CAuthentication%20Process%7C_____0#applications")
+            print(
+                "https://help.blazemeter.com/apidocs/api-monitoring/authentication.htm?tocpath=API%20Monitoring%7CAuthentication%20Process%7C_____0#applications"
+            )
         else:
             print(" [OK] BlazeMeter API Test token configured correctly.")
         print(" ")

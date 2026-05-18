@@ -9,6 +9,13 @@ from mcp.server.fastmcp import Context
 
 from src.common.api_client import api_request
 from src.common.errors import UNEXPECTED_ERROR_MESSAGE, http_error_message
+from src.common.telemetry import (
+    extract_trace_context,
+    get_meta_from_ctx,
+    http_status_to_error_type,
+    record_span_error,
+    tool_span,
+)
 from src.config.defaults import STEPS_ENDPOINT, TOOLS_PREFIX
 from src.config.token import BzmApimToken
 from src.formatters.step import format_steps
@@ -287,42 +294,47 @@ def register(mcp, token: Optional[BzmApimToken]):
     )
     async def steps(action: str, args: Dict[str, Any], ctx: Context) -> BaseResult:
         step_manager = StepManager(token, ctx)
-        try:
-            match action:
-                case "read":
-                    return await step_manager.read(args["bucket_key"], args["test_id"], args["step_id"])
-                case "list":
-                    return await step_manager.list(args["bucket_key"], args["test_id"])
-                case "add_pause_step":
-                    return await step_manager.add_pause_step(
-                        args["bucket_key"], args["test_id"], args["duration"]
-                    )
-                case "add_request_step":
-                    return await step_manager.add_request_step(
-                        args["bucket_key"], args["test_id"], args.get("method"), args.get("url")
-                    )
-                case "add_body_to_step":
-                    return await step_manager.add_body_to_step(
-                        args["bucket_key"],
-                        args["test_id"],
-                        args["step_id"],
-                        args.get("body_type"),
-                        args.get("body_content"),
-                    )
-                case "add_assertion_to_step":
-                    return await step_manager.add_assertion_to_step(
-                        args["bucket_key"],
-                        args["test_id"],
-                        args["step_id"],
-                        args.get("assertion_source"),
-                        args.get("assertion_comparison"),
-                        args.get("assertion_property"),
-                        args.get("assertion_value"),
-                    )
-                case _:
-                    return BaseResult(error=f"Action {action} not found in steps manager tool")
-        except httpx.HTTPStatusError as e:
-            return BaseResult(error=http_error_message(e))
-        except Exception as e:
-            logger.exception("Unexpected error in steps tool: %s", e)
-            return BaseResult(error=UNEXPECTED_ERROR_MESSAGE)
+        meta = get_meta_from_ctx(ctx)
+        parent_context = extract_trace_context(meta)
+        async with tool_span(f"{TOOLS_PREFIX}_steps", action, parent_context) as span:
+            try:
+                match action:
+                    case "read":
+                        return await step_manager.read(args["bucket_key"], args["test_id"], args["step_id"])
+                    case "list":
+                        return await step_manager.list(args["bucket_key"], args["test_id"])
+                    case "add_pause_step":
+                        return await step_manager.add_pause_step(
+                            args["bucket_key"], args["test_id"], args["duration"]
+                        )
+                    case "add_request_step":
+                        return await step_manager.add_request_step(
+                            args["bucket_key"], args["test_id"], args.get("method"), args.get("url")
+                        )
+                    case "add_body_to_step":
+                        return await step_manager.add_body_to_step(
+                            args["bucket_key"],
+                            args["test_id"],
+                            args["step_id"],
+                            args.get("body_type"),
+                            args.get("body_content"),
+                        )
+                    case "add_assertion_to_step":
+                        return await step_manager.add_assertion_to_step(
+                            args["bucket_key"],
+                            args["test_id"],
+                            args["step_id"],
+                            args.get("assertion_source"),
+                            args.get("assertion_comparison"),
+                            args.get("assertion_property"),
+                            args.get("assertion_value"),
+                        )
+                    case _:
+                        return BaseResult(error=f"Action {action} not found in steps manager tool")
+            except httpx.HTTPStatusError as e:
+                record_span_error(span, http_status_to_error_type(e.response.status_code))
+                return BaseResult(error=http_error_message(e))
+            except Exception as e:
+                record_span_error(span, "unexpected_error")
+                logger.exception("Unexpected error in steps tool: %s", e)
+                return BaseResult(error=UNEXPECTED_ERROR_MESSAGE)
