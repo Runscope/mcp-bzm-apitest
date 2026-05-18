@@ -1,5 +1,6 @@
 import logging
 from typing import Any, Dict, Optional
+from urllib.parse import urlparse
 
 import httpx
 from mcp.server.fastmcp import Context
@@ -29,7 +30,28 @@ class ResultManager:
         self.token = token
         self.ctx = ctx
 
+    @staticmethod
+    def _validate_trigger_url(trigger_url: str) -> Optional[str]:
+        """
+        Validate trigger_url is a safe relative path.
+        Returns an error message string if invalid, None if valid.
+        """
+        if not trigger_url or not isinstance(trigger_url, str):
+            return "trigger_url must be a non-empty string."
+        parsed = urlparse(trigger_url)
+        if parsed.scheme or parsed.netloc:
+            return (
+                "trigger_url must be a relative path (e.g. '/radar/trigger/abc123'), "
+                "not an absolute URL. Absolute URLs are not permitted."
+            )
+        if not trigger_url.startswith("/"):
+            return "trigger_url must start with '/'."
+        return None
+
     async def start(self, trigger_url: str) -> BaseResult:
+        error = self._validate_trigger_url(trigger_url)
+        if error:
+            return BaseResult(error=error)
         return await api_request(self.token, "GET", trigger_url, result_formatter=format_triggered_runs)
 
     async def read(self, bucket_key: str, test_id: str, test_run_id: str) -> BaseResult:
