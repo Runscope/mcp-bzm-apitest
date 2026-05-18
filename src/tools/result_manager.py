@@ -38,7 +38,7 @@ class ResultManager:
         self.ctx = ctx
 
     @staticmethod
-    def _validate_trigger_url(trigger_url: str) -> Optional[str]:
+    def _validate_trigger_url(trigger_url: Optional[str]) -> Optional[str]:
         """
         Validate trigger_url is a safe relative path.
         Returns an error message string if invalid, None if valid.
@@ -55,7 +55,7 @@ class ResultManager:
             return "trigger_url must start with '/'."
         return None
 
-    async def start(self, trigger_url: str) -> BaseResult:
+    async def start(self, trigger_url: Optional[str]) -> BaseResult:
         error = self._validate_trigger_url(trigger_url)
         if error:
             return BaseResult(error=error)
