@@ -1,6 +1,9 @@
 # BlazeMeter API Test MCP Server
 
 [![Downloads](https://img.shields.io/github/downloads/Runscope/mcp-bzm-apitest/total)](https://github.com/Runscope/mcp-bzm-apitest/releases)
+[![Release](https://img.shields.io/github/v/release/Runscope/mcp-bzm-apitest)](https://github.com/Runscope/mcp-bzm-apitest/releases)
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
+[![License](https://img.shields.io/github/license/Runscope/mcp-bzm-apitest)](https://github.com/Runscope/mcp-bzm-apitest/blob/master/LICENSE.txt)
 
 The BlazeMeter API Test MCP Server connects AI tools directly to cloud-based BlazeMeter API Testing & Monitoring platform (Runscope). 
 This gives AI agents, assistants, and chatbots the ability to read and manage teams, buckets and tests, analyze test and its results, and automate workflows. All through natural language interactions.
