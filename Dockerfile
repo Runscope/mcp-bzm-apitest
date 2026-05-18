@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:25.10
-
+FROM python:3.11-slim
 
 WORKDIR /app
 
@@ -23,12 +22,14 @@ RUN apt-get update -y && apt-get upgrade -y && apt-get clean && rm -rf /var/lib/
 # Create a non-root user
 RUN groupadd -r mcp-bzm-apitest && useradd -r -g mcp-bzm-apitest mcp-bzm-apitest
 
-# Copy pre-built binary
-COPY dist/mcp-bzm-apitest-linux-amd64 ./mcp-bzm-apitest
+# Copy source and install dependencies
+COPY pyproject.toml ./
+COPY main.py ./
+COPY src/ ./src/
 
+RUN pip install --no-cache-dir .
 
-RUN chmod +x ./mcp-bzm-apitest && \
-    chown mcp-bzm-apitest:mcp-bzm-apitest ./mcp-bzm-apitest
+RUN chown -R mcp-bzm-apitest:mcp-bzm-apitest /app
 
 # Switch to non-root user
 USER mcp-bzm-apitest
@@ -36,5 +37,5 @@ USER mcp-bzm-apitest
 ENV MCP_DOCKER=true
 
 # Command to run the application
-ENTRYPOINT ["./mcp-bzm-apitest"]
+ENTRYPOINT ["python", "main.py"]
 CMD ["--mcp"]
