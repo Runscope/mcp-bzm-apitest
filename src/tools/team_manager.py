@@ -7,6 +7,7 @@ from mcp.server.fastmcp import Context
 from src.common.api_client import api_request
 from src.common.errors import UNEXPECTED_ERROR_MESSAGE, http_error_message
 from src.common.telemetry import (
+    check_result_error,
     extract_trace_context,
     get_meta_from_ctx,
     http_status_to_error_type,
@@ -76,11 +77,11 @@ def register(mcp, token: Optional[BzmApimToken]):
             try:
                 match action:
                     case "list":
-                        return await team_manager.list()
+                        return check_result_error(span, await team_manager.list())
                     case "read":
-                        return await team_manager.read(args["team_id"])
+                        return check_result_error(span, await team_manager.read(args["team_id"]))
                     case "get_team_users":
-                        return await team_manager.get_team_users(args["team_id"])
+                        return check_result_error(span, await team_manager.get_team_users(args["team_id"]))
                     case _:
                         return BaseResult(error=f"Action {action} not found in teams manager tool")
             except httpx.HTTPStatusError as e:

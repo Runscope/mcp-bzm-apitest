@@ -88,6 +88,17 @@ def record_span_error(span: Any, error_type: str) -> None:
         pass
 
 
+def check_result_error(span: Any, result: Any) -> Any:
+    """Mark span as failed if the returned BaseResult carries an error.
+
+    Covers cases where api_request() absorbs HTTP errors (e.g. 401/403) and returns
+    BaseResult(error=...) instead of raising, which would otherwise leave the span successful.
+    """
+    if result is not None and getattr(result, "error", None):
+        record_span_error(span, "api_error")
+    return result
+
+
 def http_status_to_error_type(status_code: int) -> str:
     """Map an HTTP status code to an OTel error.type string."""
     if status_code in (401, 403):

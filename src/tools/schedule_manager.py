@@ -7,6 +7,7 @@ from mcp.server.fastmcp import Context
 from src.common.api_client import api_request
 from src.common.errors import UNEXPECTED_ERROR_MESSAGE, http_error_message
 from src.common.telemetry import (
+    check_result_error,
     extract_trace_context,
     get_meta_from_ctx,
     http_status_to_error_type,
@@ -109,15 +110,26 @@ def register(mcp, token: Optional[BzmApimToken]):
             try:
                 match action:
                     case "read":
-                        return await schedule_manager.read(
-                            args["bucket_key"], args["test_id"], args["schedule_id"]
+                        return check_result_error(
+                            span,
+                            await schedule_manager.read(
+                                args["bucket_key"], args["test_id"], args["schedule_id"]
+                            ),
                         )
                     case "create":
-                        return await schedule_manager.create(
-                            args["bucket_key"], args["test_id"], args["environment_id"], args["interval"]
+                        return check_result_error(
+                            span,
+                            await schedule_manager.create(
+                                args["bucket_key"],
+                                args["test_id"],
+                                args["environment_id"],
+                                args["interval"],
+                            ),
                         )
                     case "list":
-                        return await schedule_manager.list(args["bucket_key"], args["test_id"])
+                        return check_result_error(
+                            span, await schedule_manager.list(args["bucket_key"], args["test_id"])
+                        )
                     case _:
                         return BaseResult(error=f"Action {action} not found in schedules manager tool")
             except httpx.HTTPStatusError as e:
