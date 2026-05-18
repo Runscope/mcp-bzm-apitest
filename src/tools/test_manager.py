@@ -1,11 +1,11 @@
 import logging
-import traceback
 from typing import Any, Dict, Optional
 
 import httpx
 from mcp.server.fastmcp import Context
 
 from src.common.api_client import api_request
+from src.common.errors import UNEXPECTED_ERROR_MESSAGE, http_error_message
 from src.config.defaults import TESTS_ENDPOINT, TOOLS_PREFIX
 from src.config.token import BzmApimToken
 from src.formatters.test import format_test_metrics, format_tests
@@ -103,6 +103,15 @@ def register(mcp, token: Optional[BzmApimToken]):
                  test executions in a specific environment. Default value is "all".
                 region(str): The optional parameter: The region to filter metrics for test executions in a
                  specific region. Default value is "all".
+        Examples:
+            - List tests in a bucket: action="list",
+              args={"bucket_key": "abc123def456", "limit": 10, "offset": 0}
+            - Get test details: action="read",
+              args={"bucket_key": "abc123def456", "test_id": "abc123def456"}
+            - Create a test: action="create",
+              args={"test_name": "Login API Test", "bucket_key": "abc123def456"}
+            - Get daily metrics: action="get_test_metrics",
+              args={"bucket_key": "abc123def456", "test_id": "abc123def456", "timeframe": "day"}
         """,
     )
     async def tests(action: str, args: Dict[str, Any], ctx: Context) -> BaseResult:
@@ -127,11 +136,8 @@ def register(mcp, token: Optional[BzmApimToken]):
                     )
                 case _:
                     return BaseResult(error=f"Action {action} not found in tests manager tool")
-        except httpx.HTTPStatusError:
-            return BaseResult(error=f"HTTP Error: {traceback.format_exc()}")
-        except Exception:
-            return BaseResult(
-                error=f"""Error: {traceback.format_exc()}
-                          If you think this is a bug, please contact BlazeMeter support or report issue at
-                          https://github.com/Runscope/mcp-bzm-apitest/issues"""
-            )
+        except httpx.HTTPStatusError as e:
+            return BaseResult(error=http_error_message(e))
+        except Exception as e:
+            logger.exception("Unexpected error in tests tool: %s", e)
+            return BaseResult(error=UNEXPECTED_ERROR_MESSAGE)

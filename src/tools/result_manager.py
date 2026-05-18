@@ -1,11 +1,11 @@
 import logging
-import traceback
 from typing import Any, Dict, Optional
 
 import httpx
 from mcp.server.fastmcp import Context
 
 from src.common.api_client import api_request
+from src.common.errors import UNEXPECTED_ERROR_MESSAGE, http_error_message
 from src.config.defaults import (
     BUCKET_LEVEL_RESULTS_ENDPOINT,
     RESULTS_ENDPOINT,
@@ -96,6 +96,17 @@ def register(mcp, token: Optional[BzmApimToken]):
                 bucket_key(str): The required parameter. The id of the bucket where the test resides.
                 test_id(str): The required parameter. The id of the test whose result is to be read
                 limit(int): Optional parameter. Number of results to return. Default is 10, maximum is 50.
+        Examples:
+            - Start a test run: action="start",
+              args={"trigger_url": "/radar/trigger/abc123?runscope_environment=abc123"}
+            - Start a bucket-level run: action="start_bucket_level_run",
+              args={"trigger_url": "/radar/trigger/abc123"}
+            - List recent runs: action="list",
+              args={"bucket_key": "abc123def456", "test_id": "abc123def456", "limit": 10}
+            - Get a specific run result: action="read",
+              args={"bucket_key": "abc123def456", "test_id": "abc123def456", "test_run_id": "abc123def456"}
+            - Read bucket-level run: action="read_bucket_level_run",
+              args={"bucket_key": "abc123def456", "bucket_level_test_run_id": "abc123def456"}
         """,
     )
     async def results(action: str, args: Dict[str, Any], ctx: Context) -> BaseResult:
@@ -118,11 +129,8 @@ def register(mcp, token: Optional[BzmApimToken]):
                     )
                 case _:
                     return BaseResult(error=f"Action {action} not found in results manager tool")
-        except httpx.HTTPStatusError:
-            return BaseResult(error=f"HTTP Error: {traceback.format_exc()}")
-        except Exception:
-            return BaseResult(
-                error=f"""Error: {traceback.format_exc()}
-                          If you think this is a bug, please contact BlazeMeter support or report issue at
-                          https://github.com/Runscope/mcp-bzm-apitest/issues"""
-            )
+        except httpx.HTTPStatusError as e:
+            return BaseResult(error=http_error_message(e))
+        except Exception as e:
+            logger.exception("Unexpected error in results tool: %s", e)
+            return BaseResult(error=UNEXPECTED_ERROR_MESSAGE)

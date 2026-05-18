@@ -1,6 +1,5 @@
 import json
 import logging
-import traceback
 from typing import Any, Dict, Optional, Union
 
 import defusedxml.ElementTree as DET
@@ -9,6 +8,7 @@ import nh3
 from mcp.server.fastmcp import Context
 
 from src.common.api_client import api_request
+from src.common.errors import UNEXPECTED_ERROR_MESSAGE, http_error_message
 from src.config.defaults import STEPS_ENDPOINT, TOOLS_PREFIX
 from src.config.token import BzmApimToken
 from src.formatters.step import format_steps
@@ -249,13 +249,11 @@ def register(mcp, token: Optional[BzmApimToken]):
                     -  'has_value': The JSON property evaluates to an array and contains the given value as
                         an element. Source must be response_json
                     -  'is_null': The JSON property has a NULL value. Source must be response_json
-                    -  'contains': Asserts that the actual value contains the expected value
-                    -  'not_contains': Asserts that the actual value does not contain the expected value
+                    -  'contains': The given string value is found in the given property
+                    -  'does_not_contain': The given string value is not found in the given property
                     -  'empty': The given value is an empty string
                     -  'not_empty': The given value is not an empty string
                     -  'not_equal': The given string property is not equal to the given string value
-                    -  'contains': The given string value is found in the given property
-                    -  'does_not_contain': The given string value is not found in the given property
                     -  'is_a_number': The source property can be converted to a numeric value. This
                         comparison does not take a value
                     -  'equal_number': The source property is numerically equal to the given value. This
@@ -272,6 +270,20 @@ def register(mcp, token: Optional[BzmApimToken]):
                        require a value
                     - Provide the expected value for other comparisons
                        (e.g., "200", "yourapihere.com", "application")
+        Examples:
+            - List steps: action="list", args={"bucket_key": "abc123def456", "test_id": "abc123def456"}
+            - Add a GET request step: action="add_request_step",
+              args={"bucket_key": "abc123def456", "test_id": "abc123def456",
+                    "method": "GET", "url": "https://api.example.com/users"}
+            - Add a pause step: action="add_pause_step",
+              args={"bucket_key": "abc123def456", "test_id": "abc123def456", "duration": 3}
+            - Add JSON body: action="add_body_to_step",
+              args={"bucket_key": "abc123def456", "test_id": "abc123def456", "step_id": "abc123def456",
+                    "body_type": "json", "body_content": "{\"key\": \"value\"}"}
+            - Assert HTTP 200: action="add_assertion_to_step",
+              args={"bucket_key": "abc123def456", "test_id": "abc123def456", "step_id": "abc123def456",
+                    "assertion_source": "response_status", "assertion_comparison": "equals",
+                    "assertion_value": "200"}
         """,
     )
     async def steps(action: str, args: Dict[str, Any], ctx: Context) -> BaseResult:
@@ -310,11 +322,8 @@ def register(mcp, token: Optional[BzmApimToken]):
                     )
                 case _:
                     return BaseResult(error=f"Action {action} not found in steps manager tool")
-        except httpx.HTTPStatusError:
-            return BaseResult(error=f"HTTP Error: {traceback.format_exc()}")
-        except Exception:
-            return BaseResult(
-                error=f"""Error: {traceback.format_exc()}
-                          If you think this is a bug, please contact BlazeMeter support or report issue at
-                           https://github.com/Runscope/mcp-bzm-apitest/issues"""
-            )
+        except httpx.HTTPStatusError as e:
+            return BaseResult(error=http_error_message(e))
+        except Exception as e:
+            logger.exception("Unexpected error in steps tool: %s", e)
+            return BaseResult(error=UNEXPECTED_ERROR_MESSAGE)

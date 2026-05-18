@@ -1,11 +1,11 @@
 import logging
-import traceback
 from typing import Any, Dict, Optional
 
 import httpx
 from mcp.server.fastmcp import Context
 
 from src.common.api_client import api_request
+from src.common.errors import UNEXPECTED_ERROR_MESSAGE, http_error_message
 from src.config.defaults import SCHEDULES_ENDPOINT, TOOLS_PREFIX
 from src.config.token import BzmApimToken
 from src.formatters.schedule import format_schedules
@@ -85,6 +85,14 @@ def register(mcp, token: Optional[BzmApimToken]):
             args(dict): Dictionary with the following required parameters:
                 bucket_key(str): The required parameter. The id of the bucket where the test resides.
                 test_id (str): The required parameter. The id of the test where the schedules reside
+        Examples:
+            - List schedules: action="list",
+              args={"bucket_key": "abc123def456", "test_id": "abc123def456"}
+            - Get schedule details: action="read",
+              args={"bucket_key": "abc123def456", "test_id": "abc123def456", "schedule_id": "abc123def456"}
+            - Create a daily schedule: action="create",
+              args={"bucket_key": "abc123def456", "test_id": "abc123def456",
+                    "environment_id": "abc123def456", "interval": "1d"}
         """,
     )
     async def schedules(action: str, args: Dict[str, Any], ctx: Context) -> BaseResult:
@@ -103,11 +111,8 @@ def register(mcp, token: Optional[BzmApimToken]):
                     return await schedule_manager.list(args["bucket_key"], args["test_id"])
                 case _:
                     return BaseResult(error=f"Action {action} not found in schedules manager tool")
-        except httpx.HTTPStatusError:
-            return BaseResult(error=f"HTTP Error: {traceback.format_exc()}")
-        except Exception:
-            return BaseResult(
-                error=f"""Error: {traceback.format_exc()}
-                          If you think this is a bug, please contact BlazeMeter support or report issue at
-                           https://github.com/Runscope/mcp-bzm-apitest/issues"""
-            )
+        except httpx.HTTPStatusError as e:
+            return BaseResult(error=http_error_message(e))
+        except Exception as e:
+            logger.exception("Unexpected error in schedules tool: %s", e)
+            return BaseResult(error=UNEXPECTED_ERROR_MESSAGE)
