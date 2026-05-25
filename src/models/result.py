@@ -181,13 +181,20 @@ class FailureDetails(BaseModel):
 class BucketLevelTestResult(BaseModel):
     """Bucket-level test run result."""
 
+    model_config = {"extra": "ignore", "populate_by_name": True}
+
     bucket_level_test_run_id: str = Field(
         alias="uuid", description="Unique identifier for the bucket-level test run"
     )
     status: str = Field(description="Status of the bucket-level test run")
-    started_at: float = Field(description="Timestamp when the bucket-level test run started")
+    started_at: Optional[float] = Field(
+        default=None, description="Timestamp when the bucket-level test run started"
+    )
     total_test_runs: int = Field(description="Total number of test runs in the bucket")
     test_runs_passed: int = Field(description="Number of test runs that passed")
+    test_runs_completed: Optional[int] = Field(
+        default=None, description="Number of test runs completed so far"
+    )
     result: Optional[str] = Field(default=None, description="Overall result of the bucket-level test run")
     total_requests: Optional[int] = Field(
         default=None, description="Total number of requests across all test runs"
@@ -205,7 +212,7 @@ class BucketLevelTestResult(BaseModel):
         default=None, description="Total execution time of the bucket-level test run in seconds"
     )
     bucket_key: str = Field(description="Key identifier for the bucket")
-    bucket_name: str = Field(description="Name of the bucket")
+    bucket_name: Optional[str] = Field(default=None, description="Name of the bucket")
     failure_details: Optional[FailureDetails] = Field(
         default=None, description="Failure details when result is Failed"
     )
