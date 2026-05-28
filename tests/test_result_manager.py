@@ -47,7 +47,7 @@ class TestResultManager:
             assert len(result.result) == 2
 
     async def test_start_test_run(self, mock_token, mock_context):
-        """Test starting a test run with a valid relative trigger URL"""
+        """Test starting a test run appends runscope_source to the trigger URL"""
         manager = ResultManager(mock_token, mock_context)
 
         with patch("src.tools.result_manager.api_request") as mock_api:
@@ -59,7 +59,9 @@ class TestResultManager:
             result = await manager.start(trigger_url)
 
             assert result.error is None
-            mock_api.assert_called_once()
+            called_url = mock_api.call_args[0][2]  # third positional arg is the endpoint
+            assert "runscope_source=bzm-apim-mcp" in called_url
+            assert "runscope_environment=env456" in called_url
 
     async def test_start_rejects_absolute_https_url(self, mock_token, mock_context):
         """Absolute HTTPS URLs must be rejected to prevent host override"""
@@ -103,3 +105,29 @@ class TestResultManager:
         """_validate_trigger_url rejects absolute URLs"""
         assert ResultManager._validate_trigger_url("https://evil.com/steal") is not None
         assert ResultManager._validate_trigger_url("http://169.254.169.254/") is not None
+
+
+class TestAppendSourceParam:
+    """Unit tests for ResultManager._append_source_param"""
+
+    def test_appends_to_url_with_no_params(self):
+        url = "/radar/trigger/abc123"
+        result = ResultManager._append_source_param(url)
+        assert result == "/radar/trigger/abc123?runscope_source=bzm-apim-mcp"
+
+    def test_appends_to_url_with_existing_params(self):
+        url = "/radar/trigger/abc123?runscope_environment=env456"
+        result = ResultManager._append_source_param(url)
+        assert "runscope_source=bzm-apim-mcp" in result
+        assert "runscope_environment=env456" in result
+
+    def test_does_not_duplicate_if_already_present(self):
+        url = "/radar/trigger/abc123?runscope_source=bzm-apim-mcp"
+        result = ResultManager._append_source_param(url)
+        assert result.count("runscope_source") == 1
+
+    def test_does_not_overwrite_existing_source_value(self):
+        url = "/radar/trigger/abc123?runscope_source=other-tool"
+        result = ResultManager._append_source_param(url)
+        assert "runscope_source=other-tool" in result
+        assert result.count("runscope_source") == 1

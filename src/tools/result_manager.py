@@ -1,6 +1,6 @@
 import logging
 from typing import Any, Dict, Optional
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 import httpx
 from mcp.server.fastmcp import Context
@@ -55,11 +55,22 @@ class ResultManager:
             return "trigger_url must start with '/'."
         return None
 
+    @staticmethod
+    def _append_source_param(trigger_url: str) -> str:
+        parsed = urlparse(trigger_url)
+        params = parse_qs(parsed.query, keep_blank_values=True)
+        if "runscope_source" in params:
+            return trigger_url
+        params["runscope_source"] = ["bzm-apim-mcp"]
+        new_query = urlencode(params, doseq=True)
+        return urlunparse(parsed._replace(query=new_query))
+
     async def start(self, trigger_url: Optional[str]) -> BaseResult:
         error = self._validate_trigger_url(trigger_url)
         if error:
             return BaseResult(error=error)
-        return await api_request(self.token, "GET", trigger_url, result_formatter=format_triggered_runs)
+        url_with_source = self._append_source_param(trigger_url)
+        return await api_request(self.token, "GET", url_with_source, result_formatter=format_triggered_runs)
 
     async def read(self, bucket_key: str, test_id: str, test_run_id: str) -> BaseResult:
         return await api_request(
