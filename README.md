@@ -207,7 +207,7 @@ When using custom CA certificate bundles, you must configure both:
         "SSL_CERT_FILE=/etc/ssl/certs/custom-ca-bundle.crt",
         "-e",
         "BZM_API_TEST_TOKEN=your_api_token",
-        "ghcr.io/blazemeter/mcp-bzm-apitest:latest"
+        "ghcr.io/runscope/mcp-bzm-apitest:latest"
       ]
     }
   }
