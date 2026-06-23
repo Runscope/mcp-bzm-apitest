@@ -67,11 +67,5 @@ async def api_request(
                 > 0,
                 hint=hint,
             )
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 403:
-                return BaseResult(
-                    error=e.response.json().get("error", {}).get("message", "Invalid Credentials")
-                )
-            elif e.response.status_code == 401:
-                return BaseResult(error="Unauthorized to perform this action")
+        except httpx.HTTPStatusError:
             raise

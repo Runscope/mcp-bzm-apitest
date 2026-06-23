@@ -85,10 +85,13 @@ def register(mcp, token: Optional[BzmApimToken]):
                         return check_result_error(span, await bucket_manager.list())
                     case _:
                         return BaseResult(error=f"Action {action} not found in buckets manager tool")
+            except httpx.TimeoutException:
+                record_span_error(span, "timeout")
+                return BaseResult(error=UNEXPECTED_ERROR_MESSAGE)
             except httpx.HTTPStatusError as e:
                 record_span_error(span, http_status_to_error_type(e.response.status_code))
                 return BaseResult(error=http_error_message(e))
             except Exception as e:
-                record_span_error(span, "unexpected_error")
+                record_span_error(span, "tool_error")
                 logger.exception("Unexpected error in buckets tool: %s", e)
                 return BaseResult(error=UNEXPECTED_ERROR_MESSAGE)

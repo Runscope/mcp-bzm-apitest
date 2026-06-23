@@ -70,14 +70,11 @@ class TestApiClient:
             assert result.result[0]["formatted"] is True
 
     async def test_api_request_403_error(self):
-        """Test API request handles 403 Forbidden error"""
+        """Test API request propagates 403 Forbidden as HTTPStatusError for callers to handle"""
         token = BzmApimToken("test_token")
 
         mock_response = Mock()
         mock_response.status_code = 403
-        mock_response.json.return_value = {
-            "error": {"message": "Invalid Credentials"}
-        }
 
         with patch("httpx.AsyncClient") as mock_client:
             mock_exception = httpx.HTTPStatusError(
@@ -89,18 +86,16 @@ class TestApiClient:
                 side_effect=mock_exception
             )
 
-            result = await api_request(token, "GET", "/test/endpoint")
-
-            assert result.error is not None
-            assert "Invalid Credentials" in result.error
+            with pytest.raises(httpx.HTTPStatusError) as exc_info:
+                await api_request(token, "GET", "/test/endpoint")
+            assert exc_info.value.response.status_code == 403
 
     async def test_api_request_401_error(self):
-        """Test API request handles 401 Unauthorized error"""
+        """Test API request propagates 401 Unauthorized as HTTPStatusError for callers to handle"""
         token = BzmApimToken("test_token")
 
         mock_response = Mock()
         mock_response.status_code = 401
-        mock_response.json.return_value = {"error": {}}
 
         with patch("httpx.AsyncClient") as mock_client:
             mock_exception = httpx.HTTPStatusError(
@@ -112,10 +107,9 @@ class TestApiClient:
                 side_effect=mock_exception
             )
 
-            result = await api_request(token, "GET", "/test/endpoint")
-
-            assert result.error is not None
-            assert "Unauthorized" in result.error
+            with pytest.raises(httpx.HTTPStatusError) as exc_info:
+                await api_request(token, "GET", "/test/endpoint")
+            assert exc_info.value.response.status_code == 401
 
     async def test_api_request_with_headers(self):
         """Test API request includes proper headers"""
