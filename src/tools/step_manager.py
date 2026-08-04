@@ -24,6 +24,56 @@ from src.models import BaseResult
 
 logger = logging.getLogger(__name__)
 
+VARIABLE_SOURCES = ("response_status", "response_headers", "response_json", "response_xml", "response_text")
+VARIABLE_SOURCES_REQUIRING_PROPERTY = ("response_headers", "response_json", "response_xml")
+SCRIPT_TYPES = ("pre", "post")
+
+
+def _sanitize_text(content: str) -> str:
+    """Remove null bytes and control characters except newlines/tabs."""
+    return "".join(char for char in content if char.isprintable() or char in "\n\r\t")
+
+
+def _normalize_headers(headers: Any) -> Optional[Dict[str, list]]:
+    """
+    Normalize a headers mapping to the REST API contract: header name -> array of string values.
+
+    Accepts string values (wrapped in a single-element array) or arrays of strings (passed through).
+    Returns None when the input is not a non-empty mapping of that shape.
+    """
+    if not isinstance(headers, dict) or not headers:
+        return None
+    normalized: Dict[str, list] = {}
+    for name, value in headers.items():
+        if not isinstance(name, str) or not name.strip():
+            return None
+        if isinstance(value, str):
+            normalized[name] = [value]
+        elif isinstance(value, list) and value and all(isinstance(item, str) for item in value):
+            normalized[name] = value
+        else:
+            return None
+    return normalized
+
+
+def _merge_headers(existing: Any, new: Dict[str, list]) -> Dict[str, list]:
+    """
+    Merge new headers into a step's existing headers.
+
+    Existing bare-string values are normalized to single-element arrays. A new header replaces any
+    existing header whose name matches case-insensitively, so case drift cannot create duplicates.
+    """
+    merged: Dict[str, list] = {}
+    if isinstance(existing, dict):
+        for name, value in existing.items():
+            merged[name] = value if isinstance(value, list) else [str(value)]
+    for name, value in new.items():
+        for existing_name in list(merged):
+            if existing_name.lower() == name.lower():
+                del merged[existing_name]
+        merged[name] = value
+    return merged
+
 
 class StepManager:
 
@@ -60,12 +110,32 @@ class StepManager:
             json=pause_step_body,
         )
 
-    async def add_request_step(self, bucket_key: str, test_id: str, method: str, url: str) -> BaseResult:
-        request_step_body = {
+    async def add_request_step(
+        self,
+        bucket_key: str,
+        test_id: str,
+        method: str,
+        url: str,
+        headers: Optional[Dict[str, Any]] = None,
+        note: Optional[str] = None,
+    ) -> BaseResult:
+        request_step_body: Dict[str, Any] = {
             "step_type": "request",
             "method": method or "GET",
             "url": url or "https://yourapihere.com",
         }
+        if headers is not None:
+            normalized_headers = _normalize_headers(headers)
+            if normalized_headers is None:
+                return BaseResult(
+                    error="Invalid headers: provide a non-empty object mapping header names to string "
+                    "values or arrays of strings."
+                )
+            request_step_body["headers"] = normalized_headers
+        if note is not None:
+            if not isinstance(note, str):
+                return BaseResult(error="Invalid note: must be a string.")
+            request_step_body["note"] = _sanitize_text(note).strip()
         return await api_request(
             self.token,
             "POST",
@@ -88,7 +158,7 @@ class StepManager:
                     request_step_body["body"] = safe_json
                 except json.JSONDecodeError as e:
                     return BaseResult(error=f"Invalid JSON content provided for body_content: {str(e)}")
-                request_headers["Content-Type"] = "application/json"
+                request_headers["Content-Type"] = ["application/json"]
 
             case "xml":
                 try:
@@ -101,7 +171,7 @@ class StepManager:
                     return BaseResult(error=f"Invalid XML content provided for body_content: {str(e)}")
                 except Exception as e:
                     return BaseResult(error=f"Error processing XML content: {str(e)}")
-                request_headers["Content-Type"] = "application/xml"
+                request_headers["Content-Type"] = ["application/xml"]
 
             case "html":
                 try:
@@ -110,20 +180,17 @@ class StepManager:
                     request_step_body["body"] = safe_html
                 except Exception as e:
                     return BaseResult(error=f"Error processing HTML content: {str(e)}")
-                request_headers["Content-Type"] = "text/html"
+                request_headers["Content-Type"] = ["text/html"]
 
             case "text":
                 # Remove any null bytes and control characters except newlines/tabs
                 try:
-                    safe_text = "".join(
-                        char for char in body_content if char.isprintable() or char in "\n\r\t"
-                    )
-                    request_step_body["body"] = safe_text
+                    request_step_body["body"] = _sanitize_text(body_content)
                 except Exception as e:
                     return BaseResult(error=f"Error processing text content: {str(e)}")
-                request_headers["Content-Type"] = "text/plain"
+                request_headers["Content-Type"] = ["text/plain"]
             case _:
-                BaseResult(
+                return BaseResult(
                     error=f"Unsupported body_type {body_type}. Supported types are: json, xml, html, text"
                 )
 
@@ -156,7 +223,9 @@ class StepManager:
     ) -> BaseResult:
         request_result = await self.read(bucket_key, test_id, step_id, result_formatter=None)
         if not request_result or request_result.get("step_type") != "request":
-            return BaseResult(error=f"Step {step_id} is not a request step and cannot have a body added.")
+            return BaseResult(
+                error=f"Step {step_id} is not a request step and cannot have an assertion added."
+            )
         if "assertions" not in request_result or not isinstance(request_result["assertions"], list):
             request_result["assertions"] = []
         new_assertion = {"source": assertion_source, "comparison": assertion_comparison}
@@ -173,6 +242,90 @@ class StepManager:
             result_formatter=format_steps,
             json=request_result,
         )
+
+    async def _read_request_step(self, bucket_key: str, test_id: str, step_id: str, capability: str):
+        """Read a step and verify it is a request step. Returns (step, None) or (None, error result)."""
+        step = await self.read(bucket_key, test_id, step_id, result_formatter=None)
+        if not step or step.get("step_type") != "request":
+            return None, BaseResult(
+                error=f"Step {step_id} is not a request step and cannot have {capability} added."
+            )
+        return step, None
+
+    async def _put_step(self, bucket_key: str, test_id: str, step_id: str, step: dict) -> BaseResult:
+        return await api_request(
+            self.token,
+            "PUT",
+            f"{STEPS_ENDPOINT.format(bucket_key, test_id)}/{step_id}",
+            result_formatter=format_steps,
+            json=step,
+        )
+
+    async def add_headers_to_step(
+        self, bucket_key: str, test_id: str, step_id: str, headers: Optional[Dict[str, Any]]
+    ) -> BaseResult:
+        normalized_headers = _normalize_headers(headers)
+        if normalized_headers is None:
+            return BaseResult(
+                error="Invalid headers: provide a non-empty object mapping header names to string "
+                "values or arrays of strings."
+            )
+        step, error = await self._read_request_step(bucket_key, test_id, step_id, "headers")
+        if error:
+            return error
+        step["headers"] = _merge_headers(step.get("headers"), normalized_headers)
+        return await self._put_step(bucket_key, test_id, step_id, step)
+
+    async def add_variable_to_step(
+        self,
+        bucket_key: str,
+        test_id: str,
+        step_id: str,
+        variable_name: Optional[str],
+        variable_source: Optional[str],
+        variable_property: Optional[str],
+    ) -> BaseResult:
+        if not isinstance(variable_name, str) or not variable_name.strip():
+            return BaseResult(error="variable_name is required and must be a non-empty string.")
+        if variable_source not in VARIABLE_SOURCES:
+            return BaseResult(
+                error=f"Unsupported variable_source {variable_source}. Supported sources are: "
+                f"{', '.join(VARIABLE_SOURCES)}"
+            )
+        if variable_property is not None and not isinstance(variable_property, str):
+            return BaseResult(error="variable_property must be a string when provided.")
+        requires_property = variable_source in VARIABLE_SOURCES_REQUIRING_PROPERTY
+        if requires_property and not (variable_property or "").strip():
+            return BaseResult(error=f"variable_property is required for variable_source {variable_source}.")
+        step, error = await self._read_request_step(bucket_key, test_id, step_id, "a variable")
+        if error:
+            return error
+        if "variables" not in step or not isinstance(step["variables"], list):
+            step["variables"] = []
+        new_variable = {"name": variable_name.strip(), "source": variable_source}
+        if requires_property:
+            new_variable["property"] = variable_property.strip()
+        step["variables"].append(new_variable)
+        return await self._put_step(bucket_key, test_id, step_id, step)
+
+    async def add_script_to_step(
+        self, bucket_key: str, test_id: str, step_id: str, script: Optional[str], script_type: str
+    ) -> BaseResult:
+        if not isinstance(script, str) or not script.strip():
+            return BaseResult(error="script is required and must be a non-empty string.")
+        script_type = script_type or "post"
+        if script_type not in SCRIPT_TYPES:
+            return BaseResult(
+                error=f"Unsupported script_type {script_type}. Supported types are: pre, post"
+            )
+        step, error = await self._read_request_step(bucket_key, test_id, step_id, "a script")
+        if error:
+            return error
+        field = "before_scripts" if script_type == "pre" else "scripts"
+        if field not in step or not isinstance(step[field], list):
+            step[field] = []
+        step[field].append(_sanitize_text(script))
+        return await self._put_step(bucket_key, test_id, step_id, step)
 
 
 def register(mcp, token: Optional[BzmApimToken]):
@@ -204,6 +357,57 @@ def register(mcp, token: Optional[BzmApimToken]):
                 method (str): The optional parameter. HTTP method for the request step.
                 url (str): The optional parameter. URL for the request step. If not provided, use the
                  default value: "https://yourapihere.com".
+                headers (dict): The optional parameter. Request headers as an object mapping header names
+                 to string values (e.g. {"Accept": "application/json", "X-API-Key": "{{api_key}}"}).
+                 A value may also be an array of strings for multi-value headers.
+                note (str): The optional parameter. A short annotation describing the step. Must be a
+                 string.
+        - add_headers_to_step: Add request headers to an existing request step. New headers are merged
+           into the step's existing headers; a header whose name matches an existing one
+           (case-insensitively) replaces it.
+            args(dict): Dictionary with the following required parameters:
+                bucket_key(str): The required parameter. The id of the bucket where the test resides.
+                test_id (str): The required parameter. The id of the test where the step resides.
+                step_id (str): The required parameter. The id of the request step to which the headers
+                 will be added.
+                headers (dict): The required parameter. An object mapping header names to string values
+                 (e.g. {"Authorization": "Bearer {{token}}", "Accept": "application/json"}). A value may
+                 also be an array of strings for multi-value headers.
+        - add_variable_to_step: Add an extraction variable to an existing request step. Variables capture
+           values from the step's response for reuse in later steps via {{variable_name}} syntax.
+            args(dict): Dictionary with the following required parameters:
+                bucket_key(str): The required parameter. The id of the bucket where the test resides.
+                test_id (str): The required parameter. The id of the test where the step resides.
+                step_id (str): The required parameter. The id of the request step to which the variable
+                 will be added.
+                variable_name (str): The required parameter. The name of the variable. Reference it in
+                 later steps as {{variable_name}}.
+                variable_source (str): The required parameter. The location of the data to extract.
+                  Possible values are
+                    -  'response_status': The HTTP status code of the response
+                    -  'response_headers': A response header. Requires variable_property
+                    -  'response_json': Parse the response body as JSON. Requires variable_property with
+                        the JSON path to extract
+                    -  'response_xml': Parse the response body as XML. Requires variable_property with the
+                        XPath to extract
+                    -  'response_text': The response body as plain text
+                variable_property (str): The optional parameter. The property of the source data to
+                 extract. Required for response_headers (header name), response_json (JSON path, e.g.
+                 "data.items[0].id"), and response_xml (XPath). Ignored (dropped from the request) for
+                 response_status and response_text.
+        - add_script_to_step: Add a JavaScript snippet to an existing request step, either running before
+           the request is sent or after the response is received.
+            args(dict): Dictionary with the following required parameters:
+                bucket_key(str): The required parameter. The id of the bucket where the test resides.
+                test_id (str): The required parameter. The id of the test where the step resides.
+                step_id (str): The required parameter. The id of the request step to which the script will
+                 be added.
+                script (str): The required parameter. The JavaScript source code to add.
+                script_type (str): The optional parameter. When the script runs. Possible values are
+                    -  'pre': Before the request is sent (added to before_scripts). Use to set variables
+                        or pre-process the request
+                    -  'post': After the response is received (added to scripts). Use to extract variables
+                        or run custom validations. This is the default
         - add_body_to_step: Add body to an existing request step in a test.
             args(dict): Dictionary with the following required parameters:
                 bucket_key(str): The required parameter. The id of the bucket where the test resides.
@@ -291,6 +495,16 @@ def register(mcp, token: Optional[BzmApimToken]):
               args={"bucket_key": "abc123def456", "test_id": "abc123def456", "step_id": "abc123def456",
                     "assertion_source": "response_status", "assertion_comparison": "equals",
                     "assertion_value": "200"}
+            - Add headers: action="add_headers_to_step",
+              args={"bucket_key": "abc123def456", "test_id": "abc123def456", "step_id": "abc123def456",
+                    "headers": {"Authorization": "Bearer {{token}}", "Accept": "application/json"}}
+            - Extract a value for later steps: action="add_variable_to_step",
+              args={"bucket_key": "abc123def456", "test_id": "abc123def456", "step_id": "abc123def456",
+                    "variable_name": "user_id", "variable_source": "response_json",
+                    "variable_property": "data.id"}
+            - Add a post-response script: action="add_script_to_step",
+              args={"bucket_key": "abc123def456", "test_id": "abc123def456", "step_id": "abc123def456",
+                    "script": "var data = JSON.parse(response.body);", "script_type": "post"}
         """,
     )
     async def steps(action: str, args: Dict[str, Any], ctx: Context) -> BaseResult:
@@ -320,7 +534,45 @@ def register(mcp, token: Optional[BzmApimToken]):
                         return check_result_error(
                             span,
                             await step_manager.add_request_step(
-                                args["bucket_key"], args["test_id"], args.get("method"), args.get("url")
+                                args["bucket_key"],
+                                args["test_id"],
+                                args.get("method"),
+                                args.get("url"),
+                                args.get("headers"),
+                                args.get("note"),
+                            ),
+                        )
+                    case "add_headers_to_step":
+                        return check_result_error(
+                            span,
+                            await step_manager.add_headers_to_step(
+                                args["bucket_key"],
+                                args["test_id"],
+                                args["step_id"],
+                                args.get("headers"),
+                            ),
+                        )
+                    case "add_variable_to_step":
+                        return check_result_error(
+                            span,
+                            await step_manager.add_variable_to_step(
+                                args["bucket_key"],
+                                args["test_id"],
+                                args["step_id"],
+                                args.get("variable_name"),
+                                args.get("variable_source"),
+                                args.get("variable_property"),
+                            ),
+                        )
+                    case "add_script_to_step":
+                        return check_result_error(
+                            span,
+                            await step_manager.add_script_to_step(
+                                args["bucket_key"],
+                                args["test_id"],
+                                args["step_id"],
+                                args.get("script"),
+                                args.get("script_type", "post"),
                             ),
                         )
                     case "add_body_to_step":
