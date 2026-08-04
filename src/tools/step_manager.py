@@ -133,7 +133,9 @@ class StepManager:
                 )
             request_step_body["headers"] = normalized_headers
         if note is not None:
-            request_step_body["note"] = _sanitize_text(note)
+            if not isinstance(note, str):
+                return BaseResult(error="Invalid note: must be a string.")
+            request_step_body["note"] = _sanitize_text(note).strip()
         return await api_request(
             self.token,
             "POST",
@@ -290,7 +292,10 @@ class StepManager:
                 error=f"Unsupported variable_source {variable_source}. Supported sources are: "
                 f"{', '.join(VARIABLE_SOURCES)}"
             )
-        if variable_source in VARIABLE_SOURCES_REQUIRING_PROPERTY and not variable_property:
+        if variable_property is not None and not isinstance(variable_property, str):
+            return BaseResult(error="variable_property must be a string when provided.")
+        requires_property = variable_source in VARIABLE_SOURCES_REQUIRING_PROPERTY
+        if requires_property and not (variable_property or "").strip():
             return BaseResult(error=f"variable_property is required for variable_source {variable_source}.")
         step, error = await self._read_request_step(bucket_key, test_id, step_id, "a variable")
         if error:
@@ -298,8 +303,8 @@ class StepManager:
         if "variables" not in step or not isinstance(step["variables"], list):
             step["variables"] = []
         new_variable = {"name": variable_name.strip(), "source": variable_source}
-        if variable_property is not None:
-            new_variable["property"] = variable_property
+        if requires_property:
+            new_variable["property"] = variable_property.strip()
         step["variables"].append(new_variable)
         return await self._put_step(bucket_key, test_id, step_id, step)
 
@@ -355,7 +360,8 @@ def register(mcp, token: Optional[BzmApimToken]):
                 headers (dict): The optional parameter. Request headers as an object mapping header names
                  to string values (e.g. {"Accept": "application/json", "X-API-Key": "{{api_key}}"}).
                  A value may also be an array of strings for multi-value headers.
-                note (str): The optional parameter. A short annotation describing the step.
+                note (str): The optional parameter. A short annotation describing the step. Must be a
+                 string.
         - add_headers_to_step: Add request headers to an existing request step. New headers are merged
            into the step's existing headers; a header whose name matches an existing one
            (case-insensitively) replaces it.
@@ -387,8 +393,8 @@ def register(mcp, token: Optional[BzmApimToken]):
                     -  'response_text': The response body as plain text
                 variable_property (str): The optional parameter. The property of the source data to
                  extract. Required for response_headers (header name), response_json (JSON path, e.g.
-                 "data.items[0].id"), and response_xml (XPath). Not used for response_status and
-                 response_text.
+                 "data.items[0].id"), and response_xml (XPath). Ignored (dropped from the request) for
+                 response_status and response_text.
         - add_script_to_step: Add a JavaScript snippet to an existing request step, either running before
            the request is sent or after the response is received.
             args(dict): Dictionary with the following required parameters:

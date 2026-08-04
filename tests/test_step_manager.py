@@ -303,6 +303,23 @@ class TestStepManager:
             assert "Invalid headers" in result.error
             mock_api.assert_not_called()
 
+    async def test_add_request_step_invalid_note(self, mock_token, mock_context):
+        """Test adding a request step with a non-string note returns a clear validation error"""
+        manager = StepManager(mock_token, mock_context)
+
+        with patch("src.tools.step_manager.api_request") as mock_api:
+            result = await manager.add_request_step(
+                "bucket_abc",
+                "test_123",
+                method="GET",
+                url="https://api.example.com",
+                note=123
+            )
+
+            assert result.error is not None
+            assert "Invalid note" in result.error
+            mock_api.assert_not_called()
+
     async def test_add_headers_to_step(self, mock_token, mock_context):
         """Test merging headers into an existing request step"""
         manager = StepManager(mock_token, mock_context)
@@ -465,6 +482,102 @@ class TestStepManager:
                 "user_id",
                 "response_json",
                 None
+            )
+
+            assert result.error is not None
+            assert "variable_property is required" in result.error
+            mock_api.assert_not_called()
+
+    async def test_add_variable_to_step_invalid_property_type(self, mock_token, mock_context):
+        """Test a non-string variable_property returns a validation error without calling the API"""
+        manager = StepManager(mock_token, mock_context)
+
+        with patch("src.tools.step_manager.api_request") as mock_api:
+            result = await manager.add_variable_to_step(
+                "bucket_abc",
+                "test_123",
+                "step_123",
+                "user_id",
+                "response_json",
+                123
+            )
+
+            assert result.error is not None
+            assert "variable_property must be a string" in result.error
+            mock_api.assert_not_called()
+
+    async def test_add_variable_to_step_property_ignored_when_unused(self, mock_token, mock_context):
+        """Test variable_property is dropped for sources that do not use it"""
+        manager = StepManager(mock_token, mock_context)
+
+        with patch.object(manager, 'read') as mock_read, \
+             patch("src.tools.step_manager.api_request") as mock_api:
+            mock_read.return_value = {
+                "id": "step_123",
+                "step_type": "request",
+                "url": "https://api.example.com"
+            }
+            mock_api.return_value = BaseResult(
+                result=[{"id": "step_123"}],
+                total=1
+            )
+
+            result = await manager.add_variable_to_step(
+                "bucket_abc",
+                "test_123",
+                "step_123",
+                "status_code",
+                "response_status",
+                "anything"
+            )
+
+            assert result.error is None
+            put_payload = mock_api.call_args.kwargs["json"]
+            assert put_payload["variables"] == [
+                {"name": "status_code", "source": "response_status"}
+            ]
+
+    async def test_add_variable_to_step_property_stripped(self, mock_token, mock_context):
+        """Test surrounding whitespace is stripped from variable_property"""
+        manager = StepManager(mock_token, mock_context)
+
+        with patch.object(manager, 'read') as mock_read, \
+             patch("src.tools.step_manager.api_request") as mock_api:
+            mock_read.return_value = {
+                "id": "step_123",
+                "step_type": "request",
+                "url": "https://api.example.com"
+            }
+            mock_api.return_value = BaseResult(
+                result=[{"id": "step_123"}],
+                total=1
+            )
+
+            result = await manager.add_variable_to_step(
+                "bucket_abc",
+                "test_123",
+                "step_123",
+                "user_id",
+                "response_json",
+                "  data.id  "
+            )
+
+            assert result.error is None
+            put_payload = mock_api.call_args.kwargs["json"]
+            assert put_payload["variables"][-1]["property"] == "data.id"
+
+    async def test_add_variable_to_step_whitespace_property(self, mock_token, mock_context):
+        """Test a whitespace-only variable_property fails the required-property check"""
+        manager = StepManager(mock_token, mock_context)
+
+        with patch("src.tools.step_manager.api_request") as mock_api:
+            result = await manager.add_variable_to_step(
+                "bucket_abc",
+                "test_123",
+                "step_123",
+                "user_id",
+                "response_json",
+                "   "
             )
 
             assert result.error is not None
