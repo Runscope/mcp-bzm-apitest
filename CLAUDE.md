@@ -71,3 +71,8 @@ main.py → FastMCP server → server.py:register_tools() → 8 Tool Managers
 - Mocking with `unittest.mock` (Mock, AsyncMock) — API calls are mocked, not live
 - Markers: `@pytest.mark.integration`, `@pytest.mark.unit`, `@pytest.mark.slow`
 - Coverage targets `src/` only
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan
+<!-- SPECKIT END -->
