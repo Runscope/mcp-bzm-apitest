@@ -1,0 +1,219 @@
+{
+  "contract_version": "1",
+  "evidence_index": "evidence-index.json",
+  "ticket": "MOB-52688",
+  "repo": "mcp-bzm-apim",
+  "requirements": [
+    {
+      "id": "AC-1",
+      "statement": "A fresh dependency resolution from pyproject.toml resolves mcp to the 1.x line (at least 1.19.0 and below 2.0.0) and never 2.x.",
+      "source": "JIRA:MOB-52688:description",
+      "evidence": [
+        {"id": "E-002", "source": "FILE:spec.md:65", "claim": "FR-001 requires the mcp cli dependency to carry an upper bound excluding mcp 2.0.0 and later."},
+        {"id": "E-003", "source": "FILE:spec.md:66", "claim": "FR-002 requires a fresh resolution to select mcp on the 1.x line and never 2.x."}
+      ]
+    },
+    {
+      "id": "AC-2",
+      "statement": "All existing mcp.server.fastmcp imports (FastMCP, Context) across main.py, the 8 tool managers, and the tests continue to import successfully after the pin change, with no migration to mcp 2.0 paths.",
+      "source": "JIRA:MOB-52688:description",
+      "evidence": [
+        {"id": "E-004", "source": "FILE:spec.md:67", "claim": "FR-003 requires all existing mcp.server.fastmcp imports to keep working with no migration to 2.0 paths."},
+        {"id": "E-016", "source": "FILE:../../main.py:8", "claim": "main.py imports FastMCP from mcp.server.fastmcp, the import surface that must keep working."}
+      ]
+    },
+    {
+      "id": "AC-3",
+      "statement": "An automated regression guard test exists that fails when the installed mcp major version is not 1 or when the mcp.server.fastmcp import surface cannot be imported.",
+      "source": "JIRA:MOB-52688:description",
+      "evidence": [
+        {"id": "E-005", "source": "FILE:spec.md:69", "claim": "FR-005 requires an automated regression guard test that fails on a non-1 mcp major version or a broken import surface."},
+        {"id": "E-009", "source": "FILE:plan.md:65", "claim": "The plan Regression guard section specifies the version and import-surface guard tests."}
+      ]
+    },
+    {
+      "id": "AC-4",
+      "statement": "The fix introduces no production behavior change; the only production edit is the dependency specifier, and the diff to all other production source files is empty.",
+      "source": "JIRA:MOB-52688:description",
+      "evidence": [
+        {"id": "E-006", "source": "FILE:spec.md:68", "claim": "FR-004 requires no runtime logic, handler, API-client, config, or interface change; only the dependency specifier changes."},
+        {"id": "E-013", "source": "FILE:tasks.md:63", "claim": "T007 verifies the production diff is limited to the pin, the new test file, and optionally uv.lock."}
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D-1",
+      "selected": "Add an upper-bound cap to the mcp cli dependency (at least 1.19.0 and below 2.0.0) in pyproject.toml.",
+      "alternatives": [
+        "Add an upper-bound cap capping below 2.0.0",
+        "Exact-pin the dependency to 1.19.0",
+        "Migrate the codebase to mcp 2.0 import paths"
+      ],
+      "rationale": "The upper-bound cap is the minimal PEP 440 fix that keeps new installs on the mcp 1.x line while preserving the mcp.server.fastmcp import surface; exact-pin blocks safe 1.x security patches and mcp 2.0 migration is out of scope for a bug fix.",
+      "evidence": [
+        {"id": "E-007", "source": "FILE:spec.md:170", "claim": "Design alternatives select Option A, the upper-bound cap, over exact-pin and mcp 2.0 migration."},
+        {"id": "E-008", "source": "FILE:plan.md:43-52", "claim": "The plan Pin change section specifies changing the pyproject dependency to the upper-bounded form as the selected option A."}
+      ]
+    },
+    {
+      "id": "D-2",
+      "selected": "Guard the fix with real-import version and import-surface tests (no mocking of the mcp import).",
+      "alternatives": [
+        "Real-import version plus import-surface guard tests",
+        "Rely only on existing tests collection-time imports"
+      ],
+      "rationale": "The bug was silent to lockfile-respecting checkouts; a real-import guard that also asserts the mcp major version converts a silent new-install failure into a loud CI failure and would catch a future removal of the cap. Mocking the import would hide the regression.",
+      "evidence": [
+        {"id": "E-009", "source": "FILE:plan.md:65", "claim": "The plan Regression guard section specifies the version and import-surface guard tests."},
+        {"id": "E-005", "source": "FILE:spec.md:69", "claim": "FR-005 requires an automated regression guard test that fails on a non-1 mcp major version or a broken import surface."}
+      ]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "claim": "mcp 2.0 moved or removed the mcp.server.fastmcp module, causing the reported ModuleNotFoundError on new installs.",
+      "risk": "high",
+      "decision": "PROVEN",
+      "validation": "Proven by the ticket own traceback (ModuleNotFoundError for mcp.server.fastmcp on a new install that pulled 2.0); the import-surface guard test additionally fails under any mcp 2.x, providing an executable falsification.",
+      "evidence": [
+        {"id": "E-001", "source": "JIRA:MOB-52688:description", "claim": "The ticket reports new installs fail with ModuleNotFoundError for mcp.server.fastmcp because the mcp SDK 2.0 moved that module."},
+        {"id": "E-018", "source": "FILE:brownfield-context.md:126-131", "claim": "The Assumption Ledger records A1/A2 (mcp 1.x exports fastmcp; 2.0 moved it), proven by the ticket traceback, and the cap validated by resolution and import tests."}
+      ]
+    },
+    {
+      "id": "A-2",
+      "claim": "The upper-bound form capping below 2.0.0 correctly caps resolution to the mcp 1.x line under PEP 440.",
+      "risk": "medium",
+      "decision": "VALIDATE",
+      "validation": "Validated by T005 (fresh clean-venv resolution check that the resolved mcp is on the 1.x line) and by T002 (version-major guard asserting the installed mcp major is 1).",
+      "evidence": [
+        {"id": "E-003", "source": "FILE:spec.md:66", "claim": "FR-002 requires a fresh resolution to select mcp on the 1.x line and never 2.x."},
+        {"id": "E-018", "source": "FILE:brownfield-context.md:126-131", "claim": "The Assumption Ledger records A1/A2 (mcp 1.x exports fastmcp; 2.0 moved it), proven by the ticket traceback, and the cap validated by resolution and import tests."}
+      ]
+    },
+    {
+      "id": "A-3",
+      "claim": "No runtime data source is read or written by this change; the mcp import is resolved at install time, not runtime.",
+      "risk": "low",
+      "decision": "PROVEN",
+      "validation": "The change edits only the dependency specifier; the brownfield Runtime Data Availability Proof shows no runtime data read or write, and T007 verifies the production diff is limited to the pin and the new test.",
+      "evidence": [
+        {"id": "E-010", "source": "FILE:brownfield-context.md:50", "claim": "Runtime Data Availability Proof shows no runtime data is read or written; the mcp import resolves at install time."},
+        {"id": "E-013", "source": "FILE:tasks.md:63", "claim": "T007 verifies the production diff is limited to the pin, the new test file, and optionally uv.lock."}
+      ]
+    }
+  ],
+  "interfaces": [
+    {
+      "id": "I-1",
+      "producer": "mcp SDK 1.x module mcp.server.fastmcp",
+      "consumer": "mcp-bzm-apim server: main.py and 8 tool managers (and tests)",
+      "shape": "Producer exposes FastMCP (class) and Context (type) at module path mcp.server.fastmcp; consumer imports FastMCP at main.py line 8 and Context across src/tools files.",
+      "compatibility": "Preserved without an adapter: capping mcp below 2.0.0 keeps the module path stable, so the existing imports continue to resolve. mcp 1.19.0 (uv.lock line 193) exports these symbols today.",
+      "evidence": [
+        {"id": "E-016", "source": "FILE:../../main.py:8", "claim": "main.py imports FastMCP from mcp.server.fastmcp, the import surface that must keep working."},
+        {"id": "E-004", "source": "FILE:spec.md:67", "claim": "FR-003 requires all existing mcp.server.fastmcp imports to keep working with no migration to 2.0 paths."}
+      ]
+    }
+  ],
+  "change_map": [
+    {
+      "id": "C-1",
+      "path": "pyproject.toml",
+      "symbols": ["pyproject.toml::dependencies.mcp-cli"],
+      "change_type": "modify",
+      "reason": "Add the upper-bound cap to the mcp cli dependency so fresh installs resolve to mcp 1.x, fixing the new-install ModuleNotFoundError (AC-1). Preserves the import surface required by AC-2.",
+      "requirement_ids": ["AC-1", "AC-2"],
+      "task_ids": ["T004"],
+      "evidence": [
+        {"id": "E-008", "source": "FILE:plan.md:43-52", "claim": "The plan Pin change section specifies changing the pyproject dependency to the upper-bounded form as the selected option A."},
+        {"id": "E-011", "source": "FILE:tasks.md:55", "claim": "T004 applies the pin cap in pyproject line 20."}
+      ]
+    },
+    {
+      "id": "C-2",
+      "path": "tests/test_mcp_dependency_pin.py",
+      "symbols": [
+        "tests/test_mcp_dependency_pin.py::test_mcp_version_is_1x",
+        "tests/test_mcp_dependency_pin.py::test_fastmcp_import_surface"
+      ],
+      "change_type": "add",
+      "reason": "Add the regression guard: a version-major assertion (mcp is 1.x) and a real-import assertion of the mcp.server.fastmcp surface, satisfying AC-3 and providing the executable falsification for AC-2.",
+      "requirement_ids": ["AC-2", "AC-3"],
+      "task_ids": ["T002", "T003"],
+      "evidence": [
+        {"id": "E-012", "source": "FILE:tasks.md:44-45", "claim": "T002 and T003 add the version-major and import-surface guard tests."},
+        {"id": "E-009", "source": "FILE:plan.md:65", "claim": "The plan Regression guard section specifies the version and import-surface guard tests."}
+      ]
+    }
+  ],
+  "traceability": [
+    {
+      "requirement_id": "AC-1",
+      "decision_ids": ["D-1"],
+      "change_ids": ["C-1"],
+      "task_ids": ["T004"],
+      "test_ids": ["test_mcp_version_is_1x"],
+      "evidence": [
+        {"id": "E-002", "source": "FILE:spec.md:65", "claim": "FR-001 requires the mcp cli dependency to carry an upper bound excluding mcp 2.0.0 and later."},
+        {"id": "E-014", "source": "FILE:test-scenarios.md:9-10", "claim": "test-scenarios maps the version-cap and import-surface guard scenarios to the requirements."}
+      ]
+    },
+    {
+      "requirement_id": "AC-2",
+      "decision_ids": ["D-1"],
+      "change_ids": ["C-1", "C-2"],
+      "task_ids": ["T003", "T004"],
+      "test_ids": ["test_fastmcp_import_surface"],
+      "evidence": [
+        {"id": "E-004", "source": "FILE:spec.md:67", "claim": "FR-003 requires all existing mcp.server.fastmcp imports to keep working with no migration to 2.0 paths."},
+        {"id": "E-016", "source": "FILE:../../main.py:8", "claim": "main.py imports FastMCP from mcp.server.fastmcp, the import surface that must keep working."}
+      ]
+    },
+    {
+      "requirement_id": "AC-3",
+      "decision_ids": ["D-2"],
+      "change_ids": ["C-2"],
+      "task_ids": ["T002", "T003"],
+      "test_ids": ["test_mcp_version_is_1x", "test_fastmcp_import_surface"],
+      "evidence": [
+        {"id": "E-005", "source": "FILE:spec.md:69", "claim": "FR-005 requires an automated regression guard test that fails on a non-1 mcp major version or a broken import surface."},
+        {"id": "E-012", "source": "FILE:tasks.md:44-45", "claim": "T002 and T003 add the version-major and import-surface guard tests."}
+      ]
+    },
+    {
+      "requirement_id": "AC-4",
+      "decision_ids": ["D-1"],
+      "change_ids": ["C-1"],
+      "task_ids": ["T007"],
+      "test_ids": ["test_no_production_behavior_change"],
+      "evidence": [
+        {"id": "E-006", "source": "FILE:spec.md:68", "claim": "FR-004 requires no runtime logic, handler, API-client, config, or interface change; only the dependency specifier changes."},
+        {"id": "E-017", "source": "FILE:test-scenarios.md:33", "claim": "Scenario S4 verifies no production behavior change by running the full existing suite unchanged."}
+      ]
+    }
+  ],
+  "architectural_clarification": {
+    "status": "resolved",
+    "decision": "Fix the regression with a single upper-bound dependency cap (mcp cli capped below 2.0.0) plus a real-import regression guard test, preserving the existing mcp.server.fastmcp import surface. Do not migrate to mcp 2.0.",
+    "alternatives": [
+      "Upper-bound cap plus regression guard test",
+      "Exact-pin to 1.19.0",
+      "Migrate the codebase to mcp 2.0 import paths"
+    ],
+    "evidence": [
+      {"id": "E-007", "source": "FILE:spec.md:170", "claim": "Design alternatives select Option A, the upper-bound cap, over exact-pin and mcp 2.0 migration."},
+      {"id": "E-015", "source": "FILE:plan.md:23", "claim": "The Constitution Check section evaluates all five principles as PASS with no violations."}
+    ]
+  },
+  "freshness": {
+    "captured_at": "2026-08-11T16:52:05Z",
+    "source_commit": "54cdb8bb146837ef9aeb7f24d42eb0e736d7f8d9",
+    "brownfield_context_sha256": "0768b365e161e47b0fe2899cfbf2189ddd4e86e3f70436d0cd338ded3a41dcfa",
+    "ticket_input_sha256": "489ec82db350b1c717f1b89830d633743e5d43a11ee85368a2948ade3abfca16",
+    "sharder_manifest_sha256": "4977e4576b3823d595ded77636fb415fd14164969f3709102de3bfa1f62cd0f6",
+    "planner_version": "task-planner/1"
+  }
+}

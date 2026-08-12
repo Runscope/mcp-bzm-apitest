@@ -1,0 +1,97 @@
+{
+  "version": "1",
+  "ticket": "MOB-52688",
+  "repo": "mcp-bzm-apim",
+  "sources": [
+    {
+      "id": "E-001",
+      "source": "JIRA:MOB-52688:description",
+      "claim": "The ticket reports new installs fail with ModuleNotFoundError for mcp.server.fastmcp because the mcp SDK 2.0 moved that module."
+    },
+    {
+      "id": "E-002",
+      "source": "FILE:spec.md:65",
+      "claim": "FR-001 requires the mcp cli dependency to carry an upper bound excluding mcp 2.0.0 and later."
+    },
+    {
+      "id": "E-003",
+      "source": "FILE:spec.md:66",
+      "claim": "FR-002 requires a fresh resolution to select mcp on the 1.x line and never 2.x."
+    },
+    {
+      "id": "E-004",
+      "source": "FILE:spec.md:67",
+      "claim": "FR-003 requires all existing mcp.server.fastmcp imports to keep working with no migration to 2.0 paths."
+    },
+    {
+      "id": "E-005",
+      "source": "FILE:spec.md:69",
+      "claim": "FR-005 requires an automated regression guard test that fails on a non-1 mcp major version or a broken import surface."
+    },
+    {
+      "id": "E-006",
+      "source": "FILE:spec.md:68",
+      "claim": "FR-004 requires no runtime logic, handler, API-client, config, or interface change; only the dependency specifier changes."
+    },
+    {
+      "id": "E-007",
+      "source": "FILE:spec.md:170",
+      "claim": "Design alternatives select Option A, the upper-bound cap, over exact-pin and mcp 2.0 migration."
+    },
+    {
+      "id": "E-008",
+      "source": "FILE:plan.md:43-52",
+      "claim": "The plan Pin change section specifies changing the pyproject dependency to the upper-bounded form as the selected option A."
+    },
+    {
+      "id": "E-009",
+      "source": "FILE:plan.md:65",
+      "claim": "The plan Regression guard section specifies the version and import-surface guard tests."
+    },
+    {
+      "id": "E-010",
+      "source": "FILE:brownfield-context.md:50",
+      "claim": "Runtime Data Availability Proof shows no runtime data is read or written; the mcp import resolves at install time."
+    },
+    {
+      "id": "E-011",
+      "source": "FILE:tasks.md:55",
+      "claim": "T004 applies the pin cap in pyproject line 20."
+    },
+    {
+      "id": "E-012",
+      "source": "FILE:tasks.md:44-45",
+      "claim": "T002 and T003 add the version-major and import-surface guard tests."
+    },
+    {
+      "id": "E-013",
+      "source": "FILE:tasks.md:63",
+      "claim": "T007 verifies the production diff is limited to the pin, the new test file, and optionally uv.lock."
+    },
+    {
+      "id": "E-014",
+      "source": "FILE:test-scenarios.md:9-10",
+      "claim": "test-scenarios maps the version-cap and import-surface guard scenarios to the requirements."
+    },
+    {
+      "id": "E-015",
+      "source": "FILE:plan.md:23",
+      "claim": "The Constitution Check section evaluates all five principles as PASS with no violations."
+    },
+    {
+      "id": "E-016",
+      "source": "FILE:../../main.py:8",
+      "claim": "main.py imports FastMCP from mcp.server.fastmcp, the import surface that must keep working."
+    },
+    {
+      "id": "E-017",
+      "source": "FILE:test-scenarios.md:33",
+      "claim": "Scenario S4 verifies no production behavior change by running the full existing suite unchanged."
+    },
+    {
+      "id": "E-018",
+      "source": "FILE:brownfield-context.md:126-131",
+      "claim": "The Assumption Ledger records A1/A2 (mcp 1.x exports fastmcp; 2.0 moved it), proven by the ticket traceback, and the cap validated by resolution and import tests."
+    }
+  ]
+}
