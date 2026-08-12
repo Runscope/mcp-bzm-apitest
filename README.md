@@ -34,7 +34,10 @@ This gives AI agents, assistants, and chatbots the ability to read and manage te
 **Test Step Management**
 - List all steps within a test to understand its workflow and structure.
 - Retrieve a single step’s details to inspect API request/response configuration, conditions, and validations.
-- Create a new test step (Pause or Request) to modify or extend test workflows.
+- Create a new test step (Pause or Request), optionally with headers and a note set in the same call, to modify or extend test workflows.
+- Add or update request headers, and attach a JSON, XML, HTML, or text body to a request step.
+- Extract values from a response into variables, and add pre-request or post-response scripts, to chain data between steps.
+- Add assertions to a step to validate response status, timing, size, or body content.
 
 > [!NOTE]
 > **For detailed documentation including use cases, available tools, integration points, and troubleshooting, see the [BlazeMeter API Test MCP Server documentation](https://help.blazemeter.com/docs/guide/integrations-api-monitoring-mcp-server.html).**
@@ -230,7 +233,7 @@ The BlazeMeter API Test MCP Server provides the following tools for interacting 
 - `blazemeter_apitest_buckets`: List all the buckets, Read bucket details, and Create a new bucket.
 - `blazemeter_apitest_tests`: List all API tests within a bucket, Read test details, Create a new API test, and Get the test metrics.
 - `blazemeter_apitest_schedules`: List all schedules within a test, Read schedule details, and Create a new schedule.
-- `blazemeter_apitest_steps`: List all steps within a test, Read test step details, and Add a new Pause and Request step( with URL, Method, Body and Assertions) to a test.
+- `blazemeter_apitest_steps`: List all steps within a test, Read test step details, Add a new Pause or Request step (with URL, Method, Headers, and Note), and add a Body, Assertion, Header, extraction Variable, or pre/post Script to an existing request step.
 - `blazemeter_apitest_environments`: List all test environments, and Read test environment details.
 - `blazemeter_apitest_results`: Execute an individual test or all bucket-level tests, List last 50 test results, and Read test result and bucket-level result details.
 
