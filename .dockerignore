@@ -12,3 +12,7 @@ coverage.xml
 tests/
 .venv/
 .git/
+
+.claude/
+.specify/
+specs/
