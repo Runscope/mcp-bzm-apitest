@@ -14,6 +14,7 @@ from src.common.telemetry import (
     record_span_error,
     tool_span,
 )
+from src.config.auth import TokenResolver
 from src.config.defaults import SCHEDULES_ENDPOINT, TOOLS_PREFIX
 from src.config.token import BzmApimToken
 from src.formatters.schedule import format_schedules
@@ -62,7 +63,7 @@ class ScheduleManager:
         )
 
 
-def register(mcp, token: Optional[BzmApimToken]):
+def register(mcp, token_resolver: TokenResolver):
     @mcp.tool(
         name=f"{TOOLS_PREFIX}_schedules",
         description="""
@@ -103,7 +104,7 @@ def register(mcp, token: Optional[BzmApimToken]):
         """,
     )
     async def schedules(action: str, args: Dict[str, Any], ctx: Context) -> BaseResult:
-        schedule_manager = ScheduleManager(token, ctx)
+        schedule_manager = ScheduleManager(token_resolver.get_token(ctx), ctx)
         meta = get_meta_from_ctx(ctx)
         parent_context = extract_trace_context(meta)
         async with tool_span(f"{TOOLS_PREFIX}_schedules", action, parent_context) as span:
