@@ -14,6 +14,7 @@ from src.common.telemetry import (
     record_span_error,
     tool_span,
 )
+from src.config.auth import TokenResolver
 from src.config.defaults import BUCKETS_ENDPOINT, TOOLS_PREFIX
 from src.config.token import BzmApimToken
 from src.formatters.bucket import format_buckets
@@ -44,7 +45,7 @@ class BucketManager:
         return await api_request(self.token, "GET", f"{BUCKETS_ENDPOINT}", result_formatter=format_buckets)
 
 
-def register(mcp, token: Optional[BzmApimToken]):
+def register(mcp, token_resolver: TokenResolver):
     @mcp.tool(
         name=f"{TOOLS_PREFIX}_buckets",
         description="""
@@ -69,7 +70,7 @@ def register(mcp, token: Optional[BzmApimToken]):
         """,
     )
     async def buckets(action: str, args: Dict[str, Any], ctx: Context) -> BaseResult:
-        bucket_manager = BucketManager(token, ctx)
+        bucket_manager = BucketManager(token_resolver.get_token(ctx), ctx)
         meta = get_meta_from_ctx(ctx)
         parent_context = extract_trace_context(meta)
         async with tool_span(f"{TOOLS_PREFIX}_buckets", action, parent_context) as span:

@@ -8,6 +8,7 @@ from typing import Literal, cast
 from mcp.server.fastmcp import FastMCP
 
 from src.common.telemetry import init_telemetry
+from src.config.auth import run_streamable_http
 from src.config.token import BzmApimToken, BzmApimTokenError
 from src.config.version import __executable__, __version__
 from src.server import register_tools
@@ -15,6 +16,7 @@ from src.server import register_tools
 BLAZEMETER_APIM_KEY_FILE_PATH = os.getenv("BZM_API_TEST_TOKEN_FILE")
 
 LOG_LEVELS = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+MCP_TRANSPORTS = ("stdio", "http")
 
 
 def init_logging(level_name: str) -> None:
@@ -61,14 +63,22 @@ def get_api_token():
     return token
 
 
-def run(log_level: str = "CRITICAL", base_url: str = None):
-    if base_url:
-        import src.config.defaults as defaults
+def resolve_mcp_transport(raw_cli_transport: str) -> str:
+    """Resolve the MCP transport from CLI, environment, then stdio default."""
+    candidate = raw_cli_transport.strip() or os.getenv("BZM_API_TEST_MCP_TRANSPORT", "").strip()
+    if not candidate:
+        return "stdio"
 
-        defaults.BZM_APIM_BASE_URL = base_url
+    transport = candidate.lower()
+    if transport not in MCP_TRANSPORTS:
+        allowed = ", ".join(MCP_TRANSPORTS)
+        raise ValueError(f"Invalid MCP transport '{candidate}'. Valid values: {allowed}.")
+    return transport
 
+
+def build_mcp_server(log_level: str = "CRITICAL", transport: str = "stdio") -> tuple[FastMCP, str]:
+    """Build an API Test MCP server for local stdio or hosted HTTP transport."""
     init_telemetry("mcp-bzm-apitest", __version__)
-    token = get_api_token()
     instructions = """
     # BlazeMeter API Test MCP Server
     This MCP server provides AI assistants with programmatic access to BlazeMeter's
@@ -98,11 +108,37 @@ def run(log_level: str = "CRITICAL", base_url: str = None):
             steps: Test steps belong to a particular test.
             results: Test execution results belong to a particular test.
     """
+    host = "127.0.0.1"
+    port = 8000
+    if transport == "http":
+        host = os.getenv("FASTMCP_HOST", "127.0.0.1").strip() or "127.0.0.1"
+        port = int((os.getenv("FASTMCP_PORT") or os.getenv("PORT") or "8000").strip() or "8000")
+
+    wire_transport = "streamable-http" if transport == "http" else "stdio"
     mcp = FastMCP(
-        "blazemeter-apitest-mcp", instructions=instructions, log_level=cast(LOG_LEVELS, log_level)
+        "blazemeter-apitest-mcp",
+        instructions=instructions,
+        log_level=cast(LOG_LEVELS, log_level),
+        host=host,
+        port=port,
+        streamable_http_path=os.getenv("FASTMCP_STREAMABLE_HTTP_PATH", "/mcp").strip() or "/mcp",
+        stateless_http=True,
     )
-    register_tools(mcp, token)
-    mcp.run(transport="stdio")
+    register_tools(mcp, get_api_token() if wire_transport == "stdio" else None, hosted=transport == "http")
+    return mcp, wire_transport
+
+
+def run(log_level: str = "CRITICAL", base_url: str = None, transport: str = "stdio"):
+    if base_url:
+        import src.config.defaults as defaults
+
+        defaults.BZM_APIM_BASE_URL = base_url
+
+    mcp, wire_transport = build_mcp_server(log_level=log_level, transport=transport)
+    if wire_transport == "stdio":
+        mcp.run(transport="stdio")
+    else:
+        run_streamable_http(mcp)
 
 
 def main():
@@ -110,7 +146,13 @@ def main():
 
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
 
-    parser.add_argument("--mcp", action="store_true", help="Execute MCP Server")
+    parser.add_argument(
+        "--mcp",
+        nargs="?",
+        const="",
+        metavar="TRANSPORT",
+        help="Execute MCP Server. Optional TRANSPORT values: stdio or http.",
+    )
 
     parser.add_argument(
         "--log-level",
@@ -130,8 +172,12 @@ def main():
     args = parser.parse_args()
     init_logging(args.log_level)
 
-    if args.mcp:
-        run(log_level=args.log_level.upper(), base_url=args.base_url)
+    if args.mcp is not None:
+        run(
+            log_level=args.log_level.upper(),
+            base_url=args.base_url,
+            transport=resolve_mcp_transport(args.mcp),
+        )
     else:
 
         logo_ascii = (

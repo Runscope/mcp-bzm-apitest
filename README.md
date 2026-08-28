@@ -158,6 +158,65 @@ The easiest way to configure your MCP client is using our interactive CLI tool:
 
 ---
 
+### Streamable HTTP Hosting
+
+The default transport remains local `stdio`. To run a remote MCP endpoint, start the server with the
+opt-in `http` transport:
+
+```bash
+FASTMCP_HOST=127.0.0.1 FASTMCP_PORT=8000 uv run python main.py --mcp http
+```
+
+The MCP endpoint is available at `http://127.0.0.1:8000/mcp`. Configure a remote MCP client with the
+endpoint URL and send the caller's API Monitoring token on every request:
+
+```json
+{
+  "mcpServers": {
+    "BlazeMeter API Test MCP": {
+      "url": "https://mcp.example.com/mcp",
+      "headers": {
+        "Authorization": "Bearer <api-monitoring-token>"
+      }
+    }
+  }
+}
+```
+
+For a hosted deployment, do not configure `BZM_API_TEST_TOKEN` or `BZM_API_TEST_TOKEN_FILE` as a
+server-wide credential. HTTP mode resolves the Bearer token from each incoming request so each caller
+operates only on the teams, buckets, and tests available to that token.
+
+`/health` and `/healthz` are available for unauthenticated load-balancer health checks. All MCP traffic
+requires a valid Bearer header. Requests with an `Origin` header are rejected in this MVP. This protects
+the endpoint from browser-based DNS-rebinding attacks while allowing the usual desktop, IDE, and service
+MCP clients, which do not need browser CORS. Browser clients are not supported until an explicit CORS and
+origin allowlist design is added.
+
+The current MVP deliberately uses the caller's API Monitoring token as the Bearer credential and passes it
+to the Runscope API. A future phase may add separate authentication for the MCP server itself, such as an
+OAuth-based identity layer, with a trusted mapping to the caller's API Monitoring credential. The current
+API-key pass-through should therefore be treated as a product-specific MVP decision, not a complete OAuth
+authorization implementation.
+
+The hosted endpoint uses stateless request handling because the current API Test tools do not retain
+application state between calls. Each request is independently authenticated and processed, so server
+restarts do not invalidate an application session and multiple server instances do not require sticky
+session routing. Future features that need MCP session state will require an explicit state-store or a
+return to stateful transport handling.
+
+Use HTTPS and configure the public host and port through your deployment environment:
+
+```bash
+BZM_API_TEST_MCP_TRANSPORT=http \
+FASTMCP_HOST=0.0.0.0 \
+FASTMCP_PORT=8000 \
+FASTMCP_STREAMABLE_HTTP_PATH=/mcp \
+python main.py --mcp
+```
+
+---
+
 **Docker MCP Client Configuration**
 
 ```json
