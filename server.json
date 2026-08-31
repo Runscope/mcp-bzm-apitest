@@ -1,0 +1,30 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.runscope/mcp-bzm-apitest",
+  "title": "BlazeMeter API Monitoring",
+  "description": "Manage BlazeMeter API Monitoring tests, schedules, environments, executions, and results.",
+  "version": "1.3.1",
+  "repository": {
+    "url": "https://github.com/Runscope/mcp-bzm-apitest",
+    "source": "github",
+    "id": "1086417881"
+  },
+  "packages": [
+    {
+      "registryType": "oci",
+      "identifier": "ghcr.io/runscope/mcp-bzm-apitest:1.3.1",
+      "version": "1.3.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "BZM_API_TEST_TOKEN",
+          "description": "BlazeMeter API Monitoring personal access token",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

@@ -14,6 +14,8 @@
 
 FROM python:3.11-slim
 
+LABEL io.modelcontextprotocol.server.name="io.github.runscope/mcp-bzm-apitest"
+
 WORKDIR /app
 
 # Update system packages for security patches

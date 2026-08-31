@@ -1,12 +1,13 @@
-# BlazeMeter API Test MCP Server
+# BlazeMeter API Monitoring MCP Server
 
 [![Downloads](https://img.shields.io/github/downloads/Runscope/mcp-bzm-apitest/total)](https://github.com/Runscope/mcp-bzm-apitest/releases)
 [![Release](https://img.shields.io/github/v/release/Runscope/mcp-bzm-apitest)](https://github.com/Runscope/mcp-bzm-apitest/releases)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
 [![License](https://img.shields.io/github/license/Runscope/mcp-bzm-apitest)](https://github.com/Runscope/mcp-bzm-apitest/blob/master/LICENSE.txt)
 
-The BlazeMeter API Test MCP Server connects AI tools directly to cloud-based BlazeMeter API Testing & Monitoring platform (Runscope). 
-This gives AI agents, assistants, and chatbots the ability to read and manage teams, buckets and tests, analyze test and its results, and automate workflows. All through natural language interactions.
+The BlazeMeter API Monitoring MCP Server connects AI tools directly to the cloud-based BlazeMeter API
+Monitoring platform. This gives AI agents, assistants, and chatbots the ability to read and manage teams,
+buckets, and tests, analyze test results, and automate workflows through natural language interactions.
 
 ## **Use Cases**
 **Team Operations**
@@ -40,7 +41,7 @@ This gives AI agents, assistants, and chatbots the ability to read and manage te
 - Add assertions to a step to validate response status, timing, size, or body content.
 
 > [!NOTE]
-> **For detailed documentation including use cases, available tools, integration points, and troubleshooting, see the [BlazeMeter API Test MCP Server documentation](https://help.blazemeter.com/docs/guide/integrations-api-monitoring-mcp-server.html).**
+> **For detailed documentation including use cases, available tools, integration points, and troubleshooting, see the [BlazeMeter API Monitoring MCP Server documentation](https://help.blazemeter.com/docs/guide/integrations-api-monitoring-mcp-server.html).**
 
 ---
 
@@ -117,7 +118,7 @@ The easiest way to configure your MCP client is using our interactive CLI tool:
 ```json
 {
   "mcpServers": {
-    "BlazeMeter API Test MCP": {
+    "BlazeMeter API Monitoring MCP": {
       "command": "/path/to/mcp-bzm-apitest-binary",
       "args": ["--mcp"],
       "env": {
@@ -137,7 +138,7 @@ The easiest way to configure your MCP client is using our interactive CLI tool:
 ```json
 {
   "mcpServers": {
-    "BlazeMeter API Test MCP": {
+    "BlazeMeter API Monitoring MCP": {
       "command": "uvx",
       "args": [
         "--from", "git+https://github.com/Runscope/mcp-bzm-apitest.git@v1.0.0",
@@ -163,7 +164,7 @@ The easiest way to configure your MCP client is using our interactive CLI tool:
 ```json
 {
   "mcpServers": {
-    "Docker BlazeMeter API Test MCP": {
+    "Docker BlazeMeter API Monitoring MCP": {
       "command": "docker",
       "args": [
         "run",
@@ -171,11 +172,21 @@ The easiest way to configure your MCP client is using our interactive CLI tool:
         "-i",
         "-e",
         "BZM_API_TEST_TOKEN=your_api_token",
-        "ghcr.io/blazemeter/mcp-bzm-apitest:latest"
+        "ghcr.io/runscope/mcp-bzm-apitest:latest"
       ]
     }
   }
 }
+```
+
+### Official MCP Registry publication
+
+Publication of version `1.3.1` is blocked until `ghcr.io/runscope/mcp-bzm-apitest:1.3.1` is
+rebuilt from this repository and republished with its required MCP ownership label. Once the updated
+image is available, a maintainer can invoke the guarded manual workflow with:
+
+```bash
+gh workflow run publish-mcp-registry.yml --repo Runscope/mcp-bzm-apitest --ref master
 ```
 
 ---
@@ -228,7 +239,8 @@ When using custom CA certificate bundles, you must configure both:
 ---
 
 ## Tools
-The BlazeMeter API Test MCP Server provides the following tools for interacting with the BlazeMeter API Test & Monitoring platform:
+The BlazeMeter API Monitoring MCP Server provides the following tools for interacting with BlazeMeter API
+Monitoring:
 - `blazemeter_apitest_teams`: List teams within your BlazeMeter account, Read team details, and Get a list of all team users.
 - `blazemeter_apitest_buckets`: List all the buckets, Read bucket details, and Create a new bucket.
 - `blazemeter_apitest_tests`: List all API tests within a bucket, Read test details, Create a new API test, and Get the test metrics.
@@ -250,7 +262,7 @@ This project is licensed under the Apache License, Version 2.0. Please refer to 
 
 ## Support
 
-- **MCP Server Documentation**: [BlazeMeter API Test MCP Server Guide](https://help.blazemeter.com/docs/guide/integrations-api-monitoring-mcp-server.html)
-- **API Documentation**: [BlazeMeter API Test API Documentation](https://help.blazemeter.com/apidocs/api-monitoring/index.htm?tocpath=API%20Monitoring%7C_____1)
+- **MCP Server Documentation**: [BlazeMeter API Monitoring MCP Server Guide](https://help.blazemeter.com/docs/guide/integrations-api-monitoring-mcp-server.html)
+- **API Documentation**: [BlazeMeter API Monitoring API Documentation](https://help.blazemeter.com/apidocs/api-monitoring/index.htm?tocpath=API%20Monitoring%7C_____1)
 - **Issues**: [GitHub Issues](https://github.com/Runscope/mcp-bzm-apitest/issues)
 - **Support**: Contact BlazeMeter support for enterprise assistance
