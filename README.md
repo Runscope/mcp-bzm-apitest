@@ -244,7 +244,7 @@ The BlazeMeter API Test MCP Server provides the following tools for interacting 
 
 ## License
 
-This project is licensed under the Apache License, Version 2.0. Please refer to [LICENSE](./LICENSE) for the full terms.
+This project is licensed under the Apache License, Version 2.0. Please refer to [LICENSE](./LICENSE.txt) for the full terms.
 
 ---
 
