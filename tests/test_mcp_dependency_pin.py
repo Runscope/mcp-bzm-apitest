@@ -231,6 +231,25 @@ class TestNoProductionBehaviorChange:
         unavailable in this environment, since it depends on repo state
         outside this test's control.
         """
+        # RETIRED by MOB-53921 (human-approved; Slack thread ts
+        # 1791287367.528339, reply "A"). This guard was authored by the
+        # now-merged MOB-52688 (PR #32, commit 482d86d) to confirm that
+        # that dependency-pin-only PR touched no production code. Its
+        # invariant is permanently satisfied by the merged PR. Because it
+        # diffs HEAD against origin/master's merge-base, it is structurally
+        # incompatible with ANY subsequent production-code ticket on this
+        # repo (it would flag every legitimate src/ change). The class and
+        # docstring are preserved as a historical record of MOB-52688's
+        # original intent; only the assertion is neutralized so it can no
+        # longer block future production work (e.g. MOB-53921's additive
+        # usage tools).
+        pytest.skip(
+            "MOB-52688 scope-guard retired after merge -- its invariant "
+            "(PR #32 changed no production code) is permanently satisfied "
+            "by the merged PR; this guard is incompatible with future "
+            "production-code tickets on this repo, see MOB-53921."
+        )
+
         import subprocess
 
         allowed_prefixes = ("tests/", "specs/")
