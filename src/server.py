@@ -8,6 +8,7 @@ from src.tools.schedule_manager import register as register_schedule_manager
 from src.tools.step_manager import register as register_step_manager
 from src.tools.team_manager import register as register_team_manager
 from src.tools.test_manager import register as register_test_manager
+from src.tools.usage_manager import register as register_usage_manager
 from src.tools.version_manager import register as register_version_manager
 
 
@@ -27,3 +28,4 @@ def register_tools(mcp, token: Optional[BzmApimToken]):
     register_schedule_manager(mcp, token)
     register_step_manager(mcp, token)
     register_environment_manager(mcp, token)
+    register_usage_manager(mcp, token)
