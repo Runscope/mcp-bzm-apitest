@@ -1,9 +1,0 @@
-{
-  "captured_at": "2026-10-08T07:56:57.701760+00:00",
-  "context_sha256": "6c8aa01f1c672899dec36387ada4e946fd4b5e229e63b4787c396c11b02f68dd",
-  "research_fingerprint": "fb940b5e79048eba18da2239e221a99fb9f23005e9ac21d36033c530387dd7d6",
-  "source_commit": "3c50faaa5ba436b333d0cf96a109939a62ef8f5e",
-  "ticket_input_sha256": "2e4573526ff805f75874b77dda2c8a9e4e4d54c447b7bf7ebd253ef99d37fed0",
-  "sharder_manifest_sha256": "4243b02ba3fa2bd9c33520fbced93f3650a3ff4612d1657edfd8457f7dab40ba",
-  "planner_version": "task-planner/1"
-}
