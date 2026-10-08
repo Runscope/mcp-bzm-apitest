@@ -246,6 +246,24 @@ in `test-scenarios.md`.
 | AC-11 | Clear error messages for invalid/limit/perm | FR-010, SC-004 | T006, T013, T025 | test_modify_environment_invalid_id_returns_not_found | src/tools/environment_manager.py |
 | AC-12 | Delete stays out of scope | FR-012, SC-003 | T024, T026 | test_environments_tool_has_no_delete_action | src/tools/environment_manager.py |
 
+## AC Verification Strategy
+
+Each acceptance criterion declares an explicit verification marker. All ACs here are unit-testable
+behaviors verified by mocked scenarios in `test-scenarios.md` (no live API calls).
+
+- AC-1 — test_scenarios: test_list_shared_environments
+- AC-2 — test_scenarios: test_list_local_environments_regression
+- AC-3 — test_scenarios: test_read_shared_environment
+- AC-4 — test_scenarios: test_create_shared_environment
+- AC-5 — test_scenarios: test_create_local_environment
+- AC-6 — test_scenarios: test_modify_environment_agent_swap_preserves_fields, test_modify_environment_empty_payload_returns_current_unchanged
+- AC-7 — test_scenarios: test_modify_environment_name_only_preserves_remote_agents
+- AC-8 — test_scenarios: test_insufficient_permission_surfaces_auth_error
+- AC-9 — test_scenarios: test_create_local_environment_limit_reached_surfaces_api_message, test_create_shared_environment_limit_reached_surfaces_api_message
+- AC-10 — test_scenarios: test_create_modify_request_models_serialize_by_alias_exclude_none
+- AC-11 — test_scenarios: test_modify_environment_invalid_id_returns_not_found, test_modify_environment_validation_error_surfaced, test_create_local_environment_invalid_ids_return_error
+- AC-12 — test_scenarios: test_environments_tool_has_no_delete_action
+
 ## Technical Context
 
 - **Language/Version**: Python `>=3.11` (CI matrix 3.11, 3.12). `pyproject.toml:10`.

@@ -5,8 +5,8 @@
 > scenarios, refine assertions, and assign final S# ids, but it MUST preserve the `test_*` names
 > referenced by spec.md's RTM. All API calls are mocked (`unittest.mock.AsyncMock`); no live calls.
 
-**Total scenarios: 14**
-**Negative-path coverage: 43% negative (6 of 14)** — target ≥30%.
+**Total scenarios: 15**
+**Negative-path coverage: 46% negative (7 of 15)** — target ≥30%.
 
 | S# | Test | Type | Given | When | Then | Covers |
 |----|------|------|-------|------|------|--------|
@@ -24,6 +24,7 @@
 | S12 | test_create_local_environment_limit_reached_surfaces_api_message | negative | a test at the 100-env limit | create called, API returns 400 "Cannot create more than 100 …" | the API's limit message is surfaced via http_error_message; no hardcoded cap | AC-9 |
 | S13 | test_create_local_environment_invalid_ids_return_error | negative | an invalid bucket_key/test_id | create called, API returns 404 | categorized not-found error surfaced | AC-11 |
 | S14 | test_insufficient_permission_surfaces_auth_error | negative | a caller lacking permission/consent | a write action, API returns 401/403 | http_error_message auth category surfaced; tool adds no consent check and no bypass | AC-8 |
+| S15 | test_create_shared_environment_limit_reached_surfaces_api_message | negative | a bucket at the 100 shared-env limit | create shared called, API returns 400 | the API's limit message is surfaced via http_error_message; no hardcoded cap | AC-9 |
 
 ## Planner hard-gate scenarios (mandatory — carried for task-test-author)
 
@@ -53,7 +54,7 @@
 | AC-6 | S1, S11 |
 | AC-7 | S1, S2 |
 | AC-8 | S14 |
-| AC-9 | S12 |
+| AC-9 | S12, S15 |
 | AC-10 | S8 |
 | AC-11 | S9, S10, S13 |
 | AC-12 | test_environments_tool_has_no_delete_action |
