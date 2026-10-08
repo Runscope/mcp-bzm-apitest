@@ -93,3 +93,79 @@ class Environment(BaseModel):
                 data["auth_type"] = auth_type
                 data.pop("auth")
         return data
+
+
+class CreateEnvironment(BaseModel):
+    """Request model for creating an environment (writable fields only).
+
+    Serialized with model_dump(by_alias=True, exclude_none=True) so unset optional
+    fields are omitted from the POST body. Mirrors CreateSchedule (schedule.py:10-28).
+    """
+
+    name: str = Field(description="The name of the environment")
+    initial_variables: Optional[Dict[str, str]] = Field(
+        default=None, description="The initial environment variables"
+    )
+    regions: Optional[List[str]] = Field(
+        default=None, description="List of cloud regions from which the test will be executed"
+    )
+    remote_agents: Optional[List[Dict[str, str]]] = Field(
+        default=None, description="List of remote agents configuration"
+    )
+    script: Optional[str] = Field(
+        default=None, description="The initial script that will be run before the execution of test steps"
+    )
+    headers: Optional[Dict[Any, Any]] = Field(
+        default=None, description="Headers to be included in all requests"
+    )
+    retry_on_failure: Optional[bool] = Field(
+        default=None, description="Whether to retry the test on failure once again"
+    )
+    preserve_cookies: Optional[bool] = Field(
+        default=None, description="Whether to preserve cookies between test steps"
+    )
+    stop_on_failure: Optional[bool] = Field(
+        default=None, description="Whether to stop the test on the first failure"
+    )
+    verify_ssl: Optional[bool] = Field(
+        default=None, description="Whether to verify SSL certificates for HTTPS requests"
+    )
+
+
+class ModifyEnvironment(BaseModel):
+    """Request model for modifying an environment (all fields optional).
+
+    Every field is optional so a PATCH body carries ONLY the fields the caller wants
+    to change. Serialized with model_dump(by_alias=True, exclude_none=True) so omitted
+    fields are absent from the PATCH body and preserved server-side (partial-merge,
+    agent-swap safe — no MOB-49921 wholesale-replace wipe).
+    """
+
+    name: Optional[str] = Field(default=None, description="The name of the environment")
+    initial_variables: Optional[Dict[str, str]] = Field(
+        default=None, description="The initial environment variables"
+    )
+    regions: Optional[List[str]] = Field(
+        default=None, description="List of cloud regions from which the test will be executed"
+    )
+    remote_agents: Optional[List[Dict[str, str]]] = Field(
+        default=None, description="List of remote agents configuration"
+    )
+    script: Optional[str] = Field(
+        default=None, description="The initial script that will be run before the execution of test steps"
+    )
+    headers: Optional[Dict[Any, Any]] = Field(
+        default=None, description="Headers to be included in all requests"
+    )
+    retry_on_failure: Optional[bool] = Field(
+        default=None, description="Whether to retry the test on failure once again"
+    )
+    preserve_cookies: Optional[bool] = Field(
+        default=None, description="Whether to preserve cookies between test steps"
+    )
+    stop_on_failure: Optional[bool] = Field(
+        default=None, description="Whether to stop the test on the first failure"
+    )
+    verify_ssl: Optional[bool] = Field(
+        default=None, description="Whether to verify SSL certificates for HTTPS requests"
+    )
