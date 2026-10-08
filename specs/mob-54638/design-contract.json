@@ -1,0 +1,832 @@
+{
+  "contract_version": "1",
+  "evidence_index": "evidence-index.json",
+  "ticket": "MOB-54638",
+  "repo": "mcp-bzm-apim",
+  "requirements": [
+    {
+      "id": "AC-1",
+      "statement": "List shared (bucket-level) environments for a bucket.",
+      "source": "JIRA:MOB-54638:description",
+      "evidence": [
+        {
+          "id": "E-001",
+          "source": "JIRA:MOB-54638:description",
+          "claim": "The ticket requires listing shared and local environments, retrieving, creating, and modifying environments via the MCP server."
+        }
+      ]
+    },
+    {
+      "id": "AC-2",
+      "statement": "List local (test-level) environments for a test.",
+      "source": "JIRA:MOB-54638:description",
+      "evidence": [
+        {
+          "id": "E-001",
+          "source": "JIRA:MOB-54638:description",
+          "claim": "The ticket requires listing shared and local environments, retrieving, creating, and modifying environments via the MCP server."
+        }
+      ]
+    },
+    {
+      "id": "AC-3",
+      "statement": "Retrieve a single environment by ID (shared or test-level).",
+      "source": "JIRA:MOB-54638:description",
+      "evidence": [
+        {
+          "id": "E-001",
+          "source": "JIRA:MOB-54638:description",
+          "claim": "The ticket requires listing shared and local environments, retrieving, creating, and modifying environments via the MCP server."
+        }
+      ]
+    },
+    {
+      "id": "AC-4",
+      "statement": "Create a shared (bucket-level) environment.",
+      "source": "JIRA:MOB-54638:description",
+      "evidence": [
+        {
+          "id": "E-001",
+          "source": "JIRA:MOB-54638:description",
+          "claim": "The ticket requires listing shared and local environments, retrieving, creating, and modifying environments via the MCP server."
+        }
+      ]
+    },
+    {
+      "id": "AC-5",
+      "statement": "Create a local (test-level) environment.",
+      "source": "JIRA:MOB-54638:description",
+      "evidence": [
+        {
+          "id": "E-001",
+          "source": "JIRA:MOB-54638:description",
+          "claim": "The ticket requires listing shared and local environments, retrieving, creating, and modifying environments via the MCP server."
+        }
+      ]
+    },
+    {
+      "id": "AC-6",
+      "statement": "Modify an environment via PATCH partial update.",
+      "source": "JIRA:MOB-54638:description",
+      "evidence": [
+        {
+          "id": "E-001",
+          "source": "JIRA:MOB-54638:description",
+          "claim": "The ticket requires listing shared and local environments, retrieving, creating, and modifying environments via the MCP server."
+        }
+      ]
+    },
+    {
+      "id": "AC-7",
+      "statement": "Agent-swap path works end to end via the MCP tool.",
+      "source": "JIRA:MOB-54638:description",
+      "evidence": [
+        {
+          "id": "E-001",
+          "source": "JIRA:MOB-54638:description",
+          "claim": "The ticket requires listing shared and local environments, retrieving, creating, and modifying environments via the MCP server."
+        }
+      ]
+    },
+    {
+      "id": "AC-8",
+      "statement": "Create/modify tools respect existing PAT auth, RBAC, and AI-consent gating; all actions auditable.",
+      "source": "JIRA:MOB-54638:description",
+      "evidence": [
+        {
+          "id": "E-001",
+          "source": "JIRA:MOB-54638:description",
+          "claim": "The ticket requires listing shared and local environments, retrieving, creating, and modifying environments via the MCP server."
+        }
+      ]
+    },
+    {
+      "id": "AC-9",
+      "statement": "Surface API-enforced environment limits clearly.",
+      "source": "JIRA:MOB-54638:description",
+      "evidence": [
+        {
+          "id": "E-001",
+          "source": "JIRA:MOB-54638:description",
+          "claim": "The ticket requires listing shared and local environments, retrieving, creating, and modifying environments via the MCP server."
+        }
+      ]
+    },
+    {
+      "id": "AC-10",
+      "statement": "Tool naming, inputs, and output formatting follow existing Runscope MCP tool conventions.",
+      "source": "JIRA:MOB-54638:description",
+      "evidence": [
+        {
+          "id": "E-001",
+          "source": "JIRA:MOB-54638:description",
+          "claim": "The ticket requires listing shared and local environments, retrieving, creating, and modifying environments via the MCP server."
+        }
+      ]
+    },
+    {
+      "id": "AC-11",
+      "statement": "Clear error messages for invalid IDs, validation errors, insufficient permissions, and limit reached.",
+      "source": "JIRA:MOB-54638:description",
+      "evidence": [
+        {
+          "id": "E-001",
+          "source": "JIRA:MOB-54638:description",
+          "claim": "The ticket requires listing shared and local environments, retrieving, creating, and modifying environments via the MCP server."
+        }
+      ]
+    },
+    {
+      "id": "AC-12",
+      "statement": "Delete stays out of scope (no destructive operations).",
+      "source": "JIRA:MOB-54638:description",
+      "evidence": [
+        {
+          "id": "E-001",
+          "source": "JIRA:MOB-54638:description",
+          "claim": "The ticket requires listing shared and local environments, retrieving, creating, and modifying environments via the MCP server."
+        }
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D-1",
+      "selected": "Modify via PATCH partial-merge",
+      "alternatives": [
+        "Modify via PATCH partial-merge",
+        "Modify via PUT wholesale with client read-merge"
+      ],
+      "rationale": "The api service PATCH overlays only the supplied fields onto the full current environment, so remote_agents is preserved and the agent-swap path is safe; PUT would risk the historical remote_agents wipe.",
+      "evidence": [
+        {
+          "id": "E-003",
+          "source": "FILE:plan.md:101-111",
+          "claim": "The modify action uses PATCH partial-merge so remote_agents is preserved; the method is named modify_environment."
+        },
+        {
+          "id": "E-006",
+          "source": "FILE:brownfield-context.md:613-671",
+          "claim": "Design alternatives compare PATCH partial-merge (selected) against PUT wholesale (rejected) and a separate tool (rejected)."
+        }
+      ]
+    },
+    {
+      "id": "D-2",
+      "selected": "Create via POST with a typed request model",
+      "alternatives": [
+        "Create via POST with a typed request model",
+        "Create via inline dict payload"
+      ],
+      "rationale": "A typed model mirrors schedule_manager.create and gives input validation per constitution V and FR-013.",
+      "evidence": [
+        {
+          "id": "E-004",
+          "source": "FILE:plan.md:113-119",
+          "claim": "Create uses POST with a typed request model serialized by_alias and exclude_none, mirroring schedule_manager.create."
+        }
+      ]
+    },
+    {
+      "id": "D-3",
+      "selected": "Extend the single environments tool via match-action routing",
+      "alternatives": [
+        "Extend the single environments tool via match-action routing",
+        "Add a separate write-only MCP tool"
+      ],
+      "rationale": "Every manager in the repo is one domain tool with action routing; a separate tool would break convention.",
+      "evidence": [
+        {
+          "id": "E-005",
+          "source": "FILE:plan.md:121-137",
+          "claim": "The single environments tool is extended via match-action routing; shared vs local routed by test_id; auth/consent inherited; limits surfaced via http_error_message."
+        }
+      ]
+    },
+    {
+      "id": "D-4",
+      "selected": "Inherit server-side ai_consent/PAT/RBAC and surface API 400 limit errors",
+      "alternatives": [
+        "Inherit server-side ai_consent/PAT/RBAC and surface API 400 limit errors",
+        "Add a new MCP-layer ai_consent check and hardcode the 100 caps"
+      ],
+      "rationale": "The api service already enforces ai_consent for the MCP user-agent and enforces/messages the 100 caps; duplicating in the MCP layer is redundant and risks drift.",
+      "evidence": [
+        {
+          "id": "E-005",
+          "source": "FILE:plan.md:121-137",
+          "claim": "The single environments tool is extended via match-action routing; shared vs local routed by test_id; auth/consent inherited; limits surfaced via http_error_message."
+        },
+        {
+          "id": "E-008",
+          "source": "FILE:brownfield-context.md:136-160",
+          "claim": "Cross-Service Contract Verification confirms the shared/local/single environment endpoints, PATCH partial-merge, and inherited ai_consent gating from static api source."
+        }
+      ]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "claim": "The api PATCH preserves remote_agents unless it is explicitly supplied in the request body.",
+      "risk": "critical",
+      "decision": "PROVEN",
+      "validation": "A falsification test modifies only remote_agents and asserts other fields are preserved, and modifies only name and asserts remote_agents is preserved.",
+      "evidence": [
+        {
+          "id": "E-003",
+          "source": "FILE:plan.md:101-111",
+          "claim": "The modify action uses PATCH partial-merge so remote_agents is preserved; the method is named modify_environment."
+        },
+        {
+          "id": "E-007",
+          "source": "FILE:brownfield-context.md:111-123",
+          "claim": "Runtime Data Availability Proof shows every required datum is available at read time; the api PATCH merges server-side."
+        },
+        {
+          "id": "E-008",
+          "source": "FILE:brownfield-context.md:136-160",
+          "claim": "Cross-Service Contract Verification confirms the shared/local/single environment endpoints, PATCH partial-merge, and inherited ai_consent gating from static api source."
+        }
+      ]
+    },
+    {
+      "id": "A-2",
+      "claim": "Shared and local environment create/modify endpoints exist and enforce the 100 per-scope limit with a clear HTTP 400.",
+      "risk": "high",
+      "decision": "PROVEN",
+      "validation": "Contract verification tests assert the create endpoints and surface the API limit message via http_error_message.",
+      "evidence": [
+        {
+          "id": "E-008",
+          "source": "FILE:brownfield-context.md:136-160",
+          "claim": "Cross-Service Contract Verification confirms the shared/local/single environment endpoints, PATCH partial-merge, and inherited ai_consent gating from static api source."
+        }
+      ]
+    }
+  ],
+  "interfaces": [
+    {
+      "id": "I-1",
+      "producer": "api service environment endpoints",
+      "consumer": "mcp-bzm-apim environments tool",
+      "shape": "HTTP JSON over api_request: GET/POST on /buckets/{key}/environments and /buckets/{key}/tests/{id}/environments; PATCH on .../environments/{env_id} (partial-merge body)",
+      "compatibility": "Conformist: the MCP tool marshals responses through the existing Environment model; PATCH body carries only changed fields.",
+      "evidence": [
+        {
+          "id": "E-008",
+          "source": "FILE:brownfield-context.md:136-160",
+          "claim": "Cross-Service Contract Verification confirms the shared/local/single environment endpoints, PATCH partial-merge, and inherited ai_consent gating from static api source."
+        }
+      ]
+    }
+  ],
+  "change_map": [
+    {
+      "id": "C-1",
+      "path": "src/config/defaults.py",
+      "symbols": [
+        "src/config/defaults.py::BUCKET_LEVEL_ENVIRONMENT_ENDPOINT"
+      ],
+      "change_type": "modify",
+      "reason": "Add the bucket-level (shared) environment endpoint constant.",
+      "requirement_ids": [
+        "AC-1",
+        "AC-3",
+        "AC-4"
+      ],
+      "task_ids": [
+        "T001"
+      ],
+      "evidence": [
+        {
+          "id": "E-005",
+          "source": "FILE:plan.md:121-137",
+          "claim": "The single environments tool is extended via match-action routing; shared vs local routed by test_id; auth/consent inherited; limits surfaced via http_error_message."
+        },
+        {
+          "id": "E-009",
+          "source": "FILE:tasks.md:37-128",
+          "claim": "The task list defines setup, per-story failing tests, implementations, and polish for every action and error path."
+        }
+      ]
+    },
+    {
+      "id": "C-2",
+      "path": "src/models/environment.py",
+      "symbols": [
+        "src/models/environment.py::CreateEnvironment",
+        "src/models/environment.py::ModifyEnvironment"
+      ],
+      "change_type": "modify",
+      "reason": "Add typed create/modify request models serialized by_alias and exclude_none.",
+      "requirement_ids": [
+        "AC-4",
+        "AC-5",
+        "AC-6",
+        "AC-10"
+      ],
+      "task_ids": [
+        "T002",
+        "T003"
+      ],
+      "evidence": [
+        {
+          "id": "E-004",
+          "source": "FILE:plan.md:113-119",
+          "claim": "Create uses POST with a typed request model serialized by_alias and exclude_none, mirroring schedule_manager.create."
+        },
+        {
+          "id": "E-009",
+          "source": "FILE:tasks.md:37-128",
+          "claim": "The task list defines setup, per-story failing tests, implementations, and polish for every action and error path."
+        }
+      ]
+    },
+    {
+      "id": "C-3",
+      "path": "src/tools/environment_manager.py",
+      "symbols": [
+        "src/tools/environment_manager.py::EnvironmentManager.modify_environment",
+        "src/tools/environment_manager.py::EnvironmentManager.create_test_environment",
+        "src/tools/environment_manager.py::EnvironmentManager.create_shared_environment",
+        "src/tools/environment_manager.py::register"
+      ],
+      "change_type": "modify",
+      "reason": "Add create/modify methods and shared list/read, and extend the environments match-action router; inherit gating; surface limits; no delete.",
+      "requirement_ids": [
+        "AC-1",
+        "AC-2",
+        "AC-3",
+        "AC-4",
+        "AC-5",
+        "AC-6",
+        "AC-7",
+        "AC-8",
+        "AC-9",
+        "AC-11",
+        "AC-12"
+      ],
+      "task_ids": [
+        "T009",
+        "T010",
+        "T014",
+        "T015",
+        "T021",
+        "T022",
+        "T023",
+        "T026"
+      ],
+      "evidence": [
+        {
+          "id": "E-003",
+          "source": "FILE:plan.md:101-111",
+          "claim": "The modify action uses PATCH partial-merge so remote_agents is preserved; the method is named modify_environment."
+        },
+        {
+          "id": "E-005",
+          "source": "FILE:plan.md:121-137",
+          "claim": "The single environments tool is extended via match-action routing; shared vs local routed by test_id; auth/consent inherited; limits surfaced via http_error_message."
+        },
+        {
+          "id": "E-009",
+          "source": "FILE:tasks.md:37-128",
+          "claim": "The task list defines setup, per-story failing tests, implementations, and polish for every action and error path."
+        }
+      ]
+    },
+    {
+      "id": "C-4",
+      "path": "tests/test_environment_manager.py",
+      "symbols": [
+        "tests/test_environment_manager.py::test_modify_environment_agent_swap_preserves_fields",
+        "tests/test_environment_manager.py::test_environments_tool_has_no_delete_action"
+      ],
+      "change_type": "modify",
+      "reason": "Add failing tests for every new action and error path, including the partial-merge falsification and no-delete guard.",
+      "requirement_ids": [
+        "AC-6",
+        "AC-7",
+        "AC-9",
+        "AC-11",
+        "AC-12"
+      ],
+      "task_ids": [
+        "T004",
+        "T005",
+        "T006",
+        "T007",
+        "T008",
+        "T011",
+        "T012",
+        "T013",
+        "T016",
+        "T017",
+        "T018",
+        "T019",
+        "T020",
+        "T024",
+        "T025"
+      ],
+      "evidence": [
+        {
+          "id": "E-009",
+          "source": "FILE:tasks.md:37-128",
+          "claim": "The task list defines setup, per-story failing tests, implementations, and polish for every action and error path."
+        },
+        {
+          "id": "E-010",
+          "source": "FILE:test-scenarios.md:11-42",
+          "claim": "The scenario table and planner hard-gate scenarios cover each action, the partial-merge falsification, negative paths, and the no-delete guard."
+        }
+      ]
+    }
+  ],
+  "traceability": [
+    {
+      "requirement_id": "AC-1",
+      "decision_ids": [
+        "D-3"
+      ],
+      "change_ids": [
+        "C-1",
+        "C-3"
+      ],
+      "task_ids": [
+        "T016",
+        "T021",
+        "T023"
+      ],
+      "test_ids": [
+        "test_list_shared_environments"
+      ],
+      "evidence": [
+        {
+          "id": "E-011",
+          "source": "FILE:spec.md:236-247",
+          "claim": "The Requirement Traceability Matrix maps each AC to FR/SC, tasks, and a test name."
+        },
+        {
+          "id": "E-002",
+          "source": "FILE:spec.md:130-162",
+          "claim": "The functional requirements FR-001..FR-013 define the environment list/read/create/modify actions and their constraints."
+        }
+      ]
+    },
+    {
+      "requirement_id": "AC-2",
+      "decision_ids": [
+        "D-3"
+      ],
+      "change_ids": [
+        "C-3"
+      ],
+      "task_ids": [
+        "T001",
+        "T028"
+      ],
+      "test_ids": [
+        "test_list_local_environments_regression"
+      ],
+      "evidence": [
+        {
+          "id": "E-011",
+          "source": "FILE:spec.md:236-247",
+          "claim": "The Requirement Traceability Matrix maps each AC to FR/SC, tasks, and a test name."
+        },
+        {
+          "id": "E-002",
+          "source": "FILE:spec.md:130-162",
+          "claim": "The functional requirements FR-001..FR-013 define the environment list/read/create/modify actions and their constraints."
+        }
+      ]
+    },
+    {
+      "requirement_id": "AC-3",
+      "decision_ids": [
+        "D-3"
+      ],
+      "change_ids": [
+        "C-1",
+        "C-3"
+      ],
+      "task_ids": [
+        "T017",
+        "T021"
+      ],
+      "test_ids": [
+        "test_read_shared_environment"
+      ],
+      "evidence": [
+        {
+          "id": "E-011",
+          "source": "FILE:spec.md:236-247",
+          "claim": "The Requirement Traceability Matrix maps each AC to FR/SC, tasks, and a test name."
+        },
+        {
+          "id": "E-002",
+          "source": "FILE:spec.md:130-162",
+          "claim": "The functional requirements FR-001..FR-013 define the environment list/read/create/modify actions and their constraints."
+        }
+      ]
+    },
+    {
+      "requirement_id": "AC-4",
+      "decision_ids": [
+        "D-2",
+        "D-3"
+      ],
+      "change_ids": [
+        "C-1",
+        "C-2",
+        "C-3"
+      ],
+      "task_ids": [
+        "T018",
+        "T022",
+        "T023"
+      ],
+      "test_ids": [
+        "test_create_shared_environment"
+      ],
+      "evidence": [
+        {
+          "id": "E-011",
+          "source": "FILE:spec.md:236-247",
+          "claim": "The Requirement Traceability Matrix maps each AC to FR/SC, tasks, and a test name."
+        },
+        {
+          "id": "E-002",
+          "source": "FILE:spec.md:130-162",
+          "claim": "The functional requirements FR-001..FR-013 define the environment list/read/create/modify actions and their constraints."
+        }
+      ]
+    },
+    {
+      "requirement_id": "AC-5",
+      "decision_ids": [
+        "D-2"
+      ],
+      "change_ids": [
+        "C-2",
+        "C-3"
+      ],
+      "task_ids": [
+        "T011",
+        "T014",
+        "T015"
+      ],
+      "test_ids": [
+        "test_create_local_environment"
+      ],
+      "evidence": [
+        {
+          "id": "E-011",
+          "source": "FILE:spec.md:236-247",
+          "claim": "The Requirement Traceability Matrix maps each AC to FR/SC, tasks, and a test name."
+        },
+        {
+          "id": "E-002",
+          "source": "FILE:spec.md:130-162",
+          "claim": "The functional requirements FR-001..FR-013 define the environment list/read/create/modify actions and their constraints."
+        }
+      ]
+    },
+    {
+      "requirement_id": "AC-6",
+      "decision_ids": [
+        "D-1"
+      ],
+      "change_ids": [
+        "C-2",
+        "C-3",
+        "C-4"
+      ],
+      "task_ids": [
+        "T004",
+        "T009",
+        "T010"
+      ],
+      "test_ids": [
+        "test_modify_environment_agent_swap_preserves_fields"
+      ],
+      "evidence": [
+        {
+          "id": "E-011",
+          "source": "FILE:spec.md:236-247",
+          "claim": "The Requirement Traceability Matrix maps each AC to FR/SC, tasks, and a test name."
+        },
+        {
+          "id": "E-002",
+          "source": "FILE:spec.md:130-162",
+          "claim": "The functional requirements FR-001..FR-013 define the environment list/read/create/modify actions and their constraints."
+        }
+      ]
+    },
+    {
+      "requirement_id": "AC-7",
+      "decision_ids": [
+        "D-1"
+      ],
+      "change_ids": [
+        "C-3",
+        "C-4"
+      ],
+      "task_ids": [
+        "T004",
+        "T005",
+        "T009"
+      ],
+      "test_ids": [
+        "test_modify_environment_name_only_preserves_remote_agents"
+      ],
+      "evidence": [
+        {
+          "id": "E-011",
+          "source": "FILE:spec.md:236-247",
+          "claim": "The Requirement Traceability Matrix maps each AC to FR/SC, tasks, and a test name."
+        },
+        {
+          "id": "E-002",
+          "source": "FILE:spec.md:130-162",
+          "claim": "The functional requirements FR-001..FR-013 define the environment list/read/create/modify actions and their constraints."
+        }
+      ]
+    },
+    {
+      "requirement_id": "AC-8",
+      "decision_ids": [
+        "D-4"
+      ],
+      "change_ids": [
+        "C-3"
+      ],
+      "task_ids": [
+        "T025",
+        "T026"
+      ],
+      "test_ids": [
+        "test_insufficient_permission_surfaces_auth_error"
+      ],
+      "evidence": [
+        {
+          "id": "E-011",
+          "source": "FILE:spec.md:236-247",
+          "claim": "The Requirement Traceability Matrix maps each AC to FR/SC, tasks, and a test name."
+        },
+        {
+          "id": "E-002",
+          "source": "FILE:spec.md:130-162",
+          "claim": "The functional requirements FR-001..FR-013 define the environment list/read/create/modify actions and their constraints."
+        }
+      ]
+    },
+    {
+      "requirement_id": "AC-9",
+      "decision_ids": [
+        "D-4"
+      ],
+      "change_ids": [
+        "C-3",
+        "C-4"
+      ],
+      "task_ids": [
+        "T012",
+        "T019"
+      ],
+      "test_ids": [
+        "test_create_local_environment_limit_reached_surfaces_api_message"
+      ],
+      "evidence": [
+        {
+          "id": "E-011",
+          "source": "FILE:spec.md:236-247",
+          "claim": "The Requirement Traceability Matrix maps each AC to FR/SC, tasks, and a test name."
+        },
+        {
+          "id": "E-002",
+          "source": "FILE:spec.md:130-162",
+          "claim": "The functional requirements FR-001..FR-013 define the environment list/read/create/modify actions and their constraints."
+        }
+      ]
+    },
+    {
+      "requirement_id": "AC-10",
+      "decision_ids": [
+        "D-2",
+        "D-3"
+      ],
+      "change_ids": [
+        "C-2",
+        "C-3"
+      ],
+      "task_ids": [
+        "T002",
+        "T003",
+        "T026"
+      ],
+      "test_ids": [
+        "test_create_modify_request_models_serialize_by_alias_exclude_none"
+      ],
+      "evidence": [
+        {
+          "id": "E-011",
+          "source": "FILE:spec.md:236-247",
+          "claim": "The Requirement Traceability Matrix maps each AC to FR/SC, tasks, and a test name."
+        },
+        {
+          "id": "E-002",
+          "source": "FILE:spec.md:130-162",
+          "claim": "The functional requirements FR-001..FR-013 define the environment list/read/create/modify actions and their constraints."
+        }
+      ]
+    },
+    {
+      "requirement_id": "AC-11",
+      "decision_ids": [
+        "D-1"
+      ],
+      "change_ids": [
+        "C-3",
+        "C-4"
+      ],
+      "task_ids": [
+        "T006",
+        "T013",
+        "T025"
+      ],
+      "test_ids": [
+        "test_modify_environment_invalid_id_returns_not_found"
+      ],
+      "evidence": [
+        {
+          "id": "E-011",
+          "source": "FILE:spec.md:236-247",
+          "claim": "The Requirement Traceability Matrix maps each AC to FR/SC, tasks, and a test name."
+        },
+        {
+          "id": "E-002",
+          "source": "FILE:spec.md:130-162",
+          "claim": "The functional requirements FR-001..FR-013 define the environment list/read/create/modify actions and their constraints."
+        }
+      ]
+    },
+    {
+      "requirement_id": "AC-12",
+      "decision_ids": [
+        "D-3"
+      ],
+      "change_ids": [
+        "C-3",
+        "C-4"
+      ],
+      "task_ids": [
+        "T024",
+        "T026"
+      ],
+      "test_ids": [
+        "test_environments_tool_has_no_delete_action"
+      ],
+      "evidence": [
+        {
+          "id": "E-011",
+          "source": "FILE:spec.md:236-247",
+          "claim": "The Requirement Traceability Matrix maps each AC to FR/SC, tasks, and a test name."
+        },
+        {
+          "id": "E-002",
+          "source": "FILE:spec.md:130-162",
+          "claim": "The functional requirements FR-001..FR-013 define the environment list/read/create/modify actions and their constraints."
+        }
+      ]
+    }
+  ],
+  "architectural_clarification": {
+    "status": "resolved",
+    "decision": "Modify via PATCH partial-merge; extend the single environments tool; inherit server-side gating; surface API limits.",
+    "alternatives": [
+      "Modify via PATCH partial-merge",
+      "Modify via PUT wholesale with client read-merge"
+    ],
+    "evidence": [
+      {
+        "id": "E-003",
+        "source": "FILE:plan.md:101-111",
+        "claim": "The modify action uses PATCH partial-merge so remote_agents is preserved; the method is named modify_environment."
+      },
+      {
+        "id": "E-006",
+        "source": "FILE:brownfield-context.md:613-671",
+        "claim": "Design alternatives compare PATCH partial-merge (selected) against PUT wholesale (rejected) and a separate tool (rejected)."
+      }
+    ]
+  },
+  "freshness": {
+    "captured_at": "2026-10-08T08:23:25.104896+00:00",
+    "source_commit": "3c50faaa5ba436b333d0cf96a109939a62ef8f5e",
+    "brownfield_context_sha256": "6c8aa01f1c672899dec36387ada4e946fd4b5e229e63b4787c396c11b02f68dd",
+    "ticket_input_sha256": "2e4573526ff805f75874b77dda2c8a9e4e4d54c447b7bf7ebd253ef99d37fed0",
+    "sharder_manifest_sha256": "4243b02ba3fa2bd9c33520fbced93f3650a3ff4612d1657edfd8457f7dab40ba",
+    "planner_version": "task-planner/1"
+  }
+}
