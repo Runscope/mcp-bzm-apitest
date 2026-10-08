@@ -408,3 +408,89 @@ class TestUsageManagerStaticApiContract:
 
         assert result.result[0]["test_uuid"] == TEST_UUID
         assert result.result[0]["test_uuid"] != OTHER_TEST_UUID
+
+
+class TestUsageFormattersNoData:
+    """Real formatters against the producer's actual payloads (api_request is mocked elsewhere
+    in this file, so these are the only tests that exercise the formatters)."""
+
+    def test_bucket_usage_null_payload_is_zero(self):
+        """api returns null bucket_key/requests_count/dates for a bucket with no usage in the
+        window; that must surface as a legitimate 0 for the requested bucket, not an error."""
+        from src.formatters.usage import format_bucket_usage
+
+        null_payload = {
+            "bucket_key": None,
+            "requests_count": None,
+            "from_date": None,
+            "to_date": None,
+            "bucket_usage": {},
+            "bucket_test_runs_summary": {},
+        }
+        result = format_bucket_usage([null_payload], {"bucket_key": BUCKET_KEY})
+
+        assert result[0]["bucket_key"] == BUCKET_KEY
+        assert result[0]["requests_count"] == 0
+
+    def test_bucket_usage_populated_payload_unchanged(self):
+        from src.formatters.usage import format_bucket_usage
+
+        payload = {
+            "bucket_key": BUCKET_KEY,
+            "requests_count": 17,
+            "from_date": "2026-10-06",
+            "to_date": "2026-10-07",
+            "bucket_usage": {},
+            "bucket_test_runs_summary": {},
+        }
+        result = format_bucket_usage([payload], {"bucket_key": BUCKET_KEY})
+
+        assert result[0] == {
+            "bucket_key": BUCKET_KEY,
+            "requests_count": 17,
+            "from_date": "2026-10-06",
+            "to_date": "2026-10-07",
+        }
+
+    def test_team_usage_ignores_extra_api_fields(self):
+        from src.formatters.usage import format_team_usage
+
+        payload = {
+            "team_uuid": TEAM_UUID,
+            "requests_count": 42,
+            "from_date": "2026-10-06",
+            "to_date": "2026-10-07",
+            "creator_name": "x",
+            "creator_email": "x@example.com",
+            "creator_id": "y",
+            "buckets": [],
+        }
+        result = format_team_usage([payload])
+
+        assert set(result[0].keys()) == {"team_uuid", "requests_count", "from_date", "to_date"}
+
+
+@pytest.mark.asyncio
+class TestUsageManagerBucketFormatterParams:
+    async def test_bucket_usage_passes_requested_key_to_formatter(self, mock_token, mock_context):
+        _assert_implemented()
+        manager = UsageManager(mock_token, mock_context)
+
+        with patch("src.tools.usage_manager.api_request") as mock_api:
+            mock_api.return_value = BaseResult(result=[], total=0)
+            await manager.get_bucket_usage(BUCKET_KEY)
+
+        _, call_kwargs = mock_api.call_args
+        assert call_kwargs.get("result_formatter_params") == {"bucket_key": BUCKET_KEY}
+
+
+class TestUsageToolDescriptions:
+    def test_date_param_documented_as_from_date_through_today(self):
+        """api treats `date` as 'from this date through today', not a single day."""
+        import inspect
+
+        from src.tools import usage_manager
+
+        source = inspect.getsource(usage_manager.register)
+        assert "A single day" not in source
+        assert source.count("counts from this date through today") == 3

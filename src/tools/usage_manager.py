@@ -93,6 +93,7 @@ class UsageManager:
                 "GET",
                 BUCKET_USAGE_ENDPOINT.format(bucket_key),
                 result_formatter=format_bucket_usage,
+                result_formatter_params={"bucket_key": bucket_key},
                 params=_date_params(from_date, to_date, days, date),
             )
         except httpx.HTTPStatusError as e:
@@ -124,8 +125,7 @@ def register(mcp, token: Optional[BzmApimToken]):
         name=f"{TOOLS_PREFIX}_team_usage",
         description="""
         Read-only. Retrieve the total number of API Monitoring requests consumed by a team over a
-        window. Default window is today when no date params are given; maximum lookback is 90 days
-        (older data is unavailable).
+        window. Default window is today when no date params are given.
         Actions:
         - read: Get the team's request count.
             args(dict):
@@ -133,7 +133,7 @@ def register(mcp, token: Optional[BzmApimToken]):
                 from(str): Optional. Window start date (YYYY-MM-DD).
                 to(str): Optional. Window end date (YYYY-MM-DD).
                 days(int): Optional. Number of days to look back.
-                date(str): Optional. A single day (YYYY-MM-DD).
+                date(str): Optional. Window start date (YYYY-MM-DD); counts from this date through today.
         Examples:
             - action="read", args={"team_uuid": "abc123"}
             - action="read", args={"team_uuid": "abc123", "from": "2026-01-01", "to": "2026-01-08"}
@@ -146,8 +146,7 @@ def register(mcp, token: Optional[BzmApimToken]):
         name=f"{TOOLS_PREFIX}_bucket_usage",
         description="""
         Read-only. Retrieve the total number of API Monitoring requests consumed by a bucket over a
-        window. Default window is today when no date params are given; maximum lookback is 90 days
-        (older data is unavailable).
+        window. Default window is today when no date params are given.
         Actions:
         - read: Get the bucket's request count.
             args(dict):
@@ -155,7 +154,7 @@ def register(mcp, token: Optional[BzmApimToken]):
                 from(str): Optional. Window start date (YYYY-MM-DD).
                 to(str): Optional. Window end date (YYYY-MM-DD).
                 days(int): Optional. Number of days to look back.
-                date(str): Optional. A single day (YYYY-MM-DD).
+                date(str): Optional. Window start date (YYYY-MM-DD); counts from this date through today.
         Examples:
             - action="read", args={"bucket_key": "abc123"}
             - action="read", args={"bucket_key": "abc123", "from": "2026-01-01", "to": "2026-01-08"}
@@ -168,8 +167,8 @@ def register(mcp, token: Optional[BzmApimToken]):
         name=f"{TOOLS_PREFIX}_test_usage",
         description="""
         Read-only. Retrieve the total number of API Monitoring requests consumed by a test over a
-        window. Default window is today when no date params are given; maximum lookback is 90 days
-        (older data is unavailable).
+        window. Default window is today when no date params are given. Test-level usage is retained for
+        about 90 days, so older data may be unavailable.
         Actions:
         - read: Get the test's request count.
             args(dict):
@@ -178,7 +177,7 @@ def register(mcp, token: Optional[BzmApimToken]):
                 from(str): Optional. Window start date (YYYY-MM-DD).
                 to(str): Optional. Window end date (YYYY-MM-DD).
                 days(int): Optional. Number of days to look back.
-                date(str): Optional. A single day (YYYY-MM-DD).
+                date(str): Optional. Window start date (YYYY-MM-DD); counts from this date through today.
         Examples:
             - action="read", args={"bucket_key": "abc123", "test_uuid": "def456"}
             - action="read", args={"bucket_key": "abc123", "test_uuid": "def456", "days": 7}
