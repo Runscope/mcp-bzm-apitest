@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class EmailSettings(BaseModel):
@@ -15,7 +15,11 @@ class Environment(BaseModel):
     """Environment model representing a test environment."""
 
     environment_id: str = Field(alias="id", description="Unique environment identifier")
-    test_id: str = Field(description="The test unique id this environment belongs to")
+    test_id: Optional[str] = Field(
+        default=None,
+        description="The test unique id this environment belongs to; null for a shared (bucket-level)"
+        " environment",
+    )
     name: str = Field(description="The name of the environment")
     parent_environment_id: Optional[str] = Field(
         default=None,
@@ -102,6 +106,8 @@ class CreateEnvironment(BaseModel):
     fields are omitted from the POST body. Mirrors CreateSchedule (schedule.py:10-28).
     """
 
+    model_config = ConfigDict(extra="forbid")
+
     name: str = Field(description="The name of the environment")
     initial_variables: Optional[Dict[str, str]] = Field(
         default=None, description="The initial environment variables"
@@ -140,6 +146,8 @@ class ModifyEnvironment(BaseModel):
     fields are absent from the PATCH body and preserved server-side (partial-merge,
     agent-swap safe — no MOB-49921 wholesale-replace wipe).
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     name: Optional[str] = Field(default=None, description="The name of the environment")
     initial_variables: Optional[Dict[str, str]] = Field(

@@ -359,11 +359,9 @@ class TestModifyEnvironmentErrorPaths:
     async def test_modify_environment_empty_payload_returns_current_unchanged(self, mock_token, mock_context):
         """Covers T008. Scenario S11 (negative / edge). AC-6.
 
-        A modify call with no changed fields must return the current
-        environment unchanged, with no API write and no error (spec.md Edge
-        Cases: "Empty modify payload"). Falsification: an implementation that
-        always issues a PATCH (even an empty one) would fail the
-        mock_api.assert_not_called() below.
+        A modify call with no changed fields must return the CURRENT environment (not just its
+        id) with no write and no error (spec.md Edge Cases: "Empty modify payload"). It reads the
+        environment with a GET; a PATCH would be a write.
         """
         manager = EnvironmentManager(mock_token, mock_context)
 
@@ -380,8 +378,83 @@ class TestModifyEnvironmentErrorPaths:
             result = await manager.modify_environment("bucket_abc", "env_123", test_id="test_123")
 
         assert result.error is None
-        assert result.result[0]["id"] == "env_123"
+        assert result.result[0]["name"] == "Production"
+        mock_api.assert_called_once()
+        call_args, _ = mock_api.call_args
+        assert call_args[1] == "GET"
+        assert call_args[2] == "/buckets/bucket_abc/tests/test_123/environments/env_123"
+
+
+@pytest.mark.asyncio
+class TestEnvironmentArgumentValidation:
+    """Unsupported or missing fields must produce a clear error, never a silent success."""
+
+    async def test_modify_unsupported_field_is_rejected(self, mock_token, mock_context):
+        manager = EnvironmentManager(mock_token, mock_context)
+
+        with patch("src.tools.environment_manager.api_request") as mock_api:
+            result = await manager.modify_environment(
+                "bucket_abc", "env_123", webhooks=["https://example.com/hook"]
+            )
+
+        assert result.error is not None
+        assert "webhooks" in result.error
+        assert "not a supported field" in result.error
         mock_api.assert_not_called()
+
+    async def test_create_unsupported_field_is_rejected(self, mock_token, mock_context):
+        manager = EnvironmentManager(mock_token, mock_context)
+
+        with patch("src.tools.environment_manager.api_request") as mock_api:
+            result = await manager.create_shared_environment("bucket_abc", name="Shared", emails={})
+
+        assert result.error is not None
+        assert "emails" in result.error
+        mock_api.assert_not_called()
+
+    async def test_create_without_name_reports_missing_name(self, mock_token, mock_context):
+        manager = EnvironmentManager(mock_token, mock_context)
+
+        with patch("src.tools.environment_manager.api_request") as mock_api:
+            result = await manager.create_test_environment("bucket_abc", "test_123")
+
+        assert result.error is not None
+        assert "'name' is required" in result.error
+        mock_api.assert_not_called()
+
+
+class TestSharedEnvironmentFormatting:
+    """api_request is mocked in the manager tests, so these run the real formatter against the
+    producer's shared-environment payload, where test_id is null (it belongs to no test)."""
+
+    def test_shared_environment_with_null_test_id_formats(self):
+        from src.formatters.environment import format_environments
+
+        payload = {
+            "id": "env-uuid-1",
+            "test_id": None,
+            "name": "Shared Production",
+            "parent_environment_id": None,
+            "initial_variables": {"base_url": "https://example.com"},
+            "retry_on_failure": False,
+            "script": None,
+            "webhooks": [],
+            "integrations": [],
+            "emails": {"recipients": []},
+            "preserve_cookies": True,
+            "stop_on_failure": False,
+            "verify_ssl": True,
+            "http_version_support": "http1.1",
+            "force_h2c": False,
+            "regions": ["us1"],
+            "remote_agents": [],
+            "headers": {},
+        }
+
+        result = format_environments([payload])
+
+        assert result[0]["environment_id"] == "env-uuid-1"
+        assert result[0]["test_id"] is None
 
 
 @pytest.mark.asyncio

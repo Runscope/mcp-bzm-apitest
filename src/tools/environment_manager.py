@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional
 
 import httpx
 from mcp.server.fastmcp import Context
+from pydantic import ValidationError
 
 from src.common.api_client import api_request
 from src.common.errors import UNEXPECTED_ERROR_MESSAGE, http_error_message
@@ -37,6 +38,20 @@ def _environments_endpoint(bucket_key: str, test_id: Optional[str]) -> str:
     return BUCKET_LEVEL_ENVIRONMENT_ENDPOINT.format(bucket_key)
 
 
+def _invalid_arguments(error: ValidationError) -> BaseResult:
+    """Turn a request-model validation error into a clear, actionable tool error."""
+    problems = []
+    for err in error.errors():
+        field = ".".join(str(part) for part in err["loc"]) or "arguments"
+        if err["type"] == "extra_forbidden":
+            problems.append(f"'{field}' is not a supported field")
+        elif err["type"] == "missing":
+            problems.append(f"'{field}' is required")
+        else:
+            problems.append(f"'{field}': {err['msg']}")
+    return BaseResult(error="Invalid environment arguments: " + "; ".join(problems))
+
+
 class EnvironmentManager:
 
     def __init__(self, token: Optional[BzmApimToken], ctx: Context):
@@ -60,7 +75,10 @@ class EnvironmentManager:
         )
 
     async def create_test_environment(self, bucket_key: str, test_id: str, **fields: Any) -> BaseResult:
-        environment_data = CreateEnvironment(**fields)
+        try:
+            environment_data = CreateEnvironment(**fields)
+        except ValidationError as e:
+            return _invalid_arguments(e)
         body = environment_data.model_dump(by_alias=True, exclude_none=True)
         return await api_request(
             self.token,
@@ -71,7 +89,10 @@ class EnvironmentManager:
         )
 
     async def create_shared_environment(self, bucket_key: str, **fields: Any) -> BaseResult:
-        environment_data = CreateEnvironment(**fields)
+        try:
+            environment_data = CreateEnvironment(**fields)
+        except ValidationError as e:
+            return _invalid_arguments(e)
         body = environment_data.model_dump(by_alias=True, exclude_none=True)
         return await api_request(
             self.token,
@@ -88,10 +109,14 @@ class EnvironmentManager:
         test_id: Optional[str] = None,
         **fields: Any,
     ) -> BaseResult:
-        environment_data = ModifyEnvironment(**fields)
+        try:
+            environment_data = ModifyEnvironment(**fields)
+        except ValidationError as e:
+            return _invalid_arguments(e)
         body = environment_data.model_dump(by_alias=True, exclude_none=True)
         if not body:
-            return BaseResult(result=[{"id": environment_id}], total=1)
+            # Nothing to change: no write, return the environment as it currently is.
+            return await self.read(bucket_key, test_id, environment_id)
         return await api_request(
             self.token,
             "PATCH",
@@ -106,7 +131,9 @@ def register(mcp, token: Optional[BzmApimToken]):
         name=f"{TOOLS_PREFIX}_environments",
         description="""
         Operations on environments. Environments define execution settings for a test such as
-        regions, variables, headers, SSL verification, remote agents, and notification settings.
+        regions, variables, headers, SSL verification, and remote agents. Notification settings
+        (emails, webhooks, integrations) and authentication are returned when reading but cannot
+        be set through create or modify.
         Environments have two scopes: local (test-level, scoped to a single test) and shared
         (bucket-level, reusable across tests). Supply test_id for the local scope; omit it for the
         shared scope. Delete is not supported.
@@ -133,7 +160,10 @@ def register(mcp, token: Optional[BzmApimToken]):
         - modify: Partially update an environment via PATCH. Only the supplied fields are changed;
           all other fields (including remote_agents when not supplied) are preserved server-side.
           Use this for the agent-swap path: supply only remote_agents to swap the private agent
-          while keeping every other setting intact.
+          while keeping every other setting intact. Each supplied field replaces that field's whole
+          value (e.g. initial_variables and remote_agents are replaced, not merged key by key), so
+          send the complete new value. Unsupported fields are rejected with an error. With no
+          fields supplied, nothing is changed and the current environment is returned.
             args(dict):
                 bucket_key(str): Required. The id of the bucket.
                 environment_id(str): Required. The id of the environment to modify.
