@@ -75,5 +75,5 @@ main.py → FastMCP server → server.py:register_tools() → 8 Tool Managers
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/mob-53921/plan.md` (MOB-53921 — add read-only usage-retrieval MCP tools).
+`specs/mob-54638/plan.md` (MOB-54638 — add environment create/modify MCP tools).
 <!-- SPECKIT END -->
