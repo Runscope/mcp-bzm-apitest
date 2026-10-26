@@ -234,8 +234,11 @@ The BlazeMeter API Test MCP Server provides the following tools for interacting 
 - `blazemeter_apitest_tests`: List all API tests within a bucket, Read test details, Create a new API test, and Get the test metrics.
 - `blazemeter_apitest_schedules`: List all schedules within a test, Read schedule details, and Create a new schedule.
 - `blazemeter_apitest_steps`: List all steps within a test, Read test step details, Add a new Pause or Request step (with URL, Method, Headers, and Note), and add a Body, Assertion, Header, extraction Variable, or pre/post Script to an existing request step.
-- `blazemeter_apitest_environments`: List all test environments, and Read test environment details.
+- `blazemeter_apitest_environments`: List all test/shared environments, Read test/shared environment details and update test/shared environments.
 - `blazemeter_apitest_results`: Execute an individual test or all bucket-level tests, List last 50 test results, and Read test result and bucket-level result details.
+- `blazemeter_apitest_team_usage`: Fetch the total requests usage of a team.
+- `blazemeter_apitest_bucket_usage`: Fetch the total requests usage of a bucket.
+- `blazemeter_apitest_test_usage`: Fetch the total requests usage of a test.
 
 ## Security
 - Never share API tokens
