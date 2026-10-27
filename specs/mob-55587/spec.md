@@ -214,6 +214,18 @@ An AI agent needs to reorder the steps of a test so the sequence matches the int
 
 Each action (add / update / reorder) is a single API round-trip. There is no nested or N×M external-call pattern, so no call-budget / latency-envelope performance strategy is required.
 
+## AC Verification Strategy
+
+Each acceptance criterion is verified by the test scenarios declared in `test-scenarios.md` (marker syntax: `test_scenarios: [S#, ...]`). No AC is manual-only; all are covered by mocked unit tests.
+
+- **AC-1** (add Inbound, conditional-if, conditional-loop, subtest step types) — `test_scenarios: [S1, S2, S3, S4, S5, S6, S7]`
+- **AC-2** (modify/update an existing test step) — `test_scenarios: [S8, S9]`
+- **AC-3** (change test step order) — `test_scenarios: [S10, S11]`
+- **FR-008** (registration dispatch for the 6 new actions) — `test_scenarios: [S12]`
+- **FR-010** (categorized error handling for the new actions) — `test_scenarios: [S13]`
+
+Each `S#` maps to a concrete `test_*` name and a positive/negative type in `test-scenarios.md`. The non-regression gate (SC-004) is verified by the full suite + lint (`make test` / `make lint`), which is a tooling gate, not a unit test.
+
 ## Requirement Traceability Matrix
 
 | Jira AC | Spec FR / SC | Plan section | Task IDs | Test | Impl location |
