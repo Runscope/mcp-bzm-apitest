@@ -241,6 +241,17 @@ class StepManager:
             json=subtest_step_body,
         )
 
+    async def update_step(
+        self, bucket_key: str, test_id: str, step_id: str, updates: Dict[str, Any]
+    ) -> BaseResult:
+        if not isinstance(updates, dict) or not updates:
+            return BaseResult(error="updates must be a non-empty object of fields to change.")
+        step = await self.read(bucket_key, test_id, step_id, result_formatter=None)
+        if not step:
+            return BaseResult(error=f"Step {step_id} not found.")
+        step.update(updates)
+        return await self._put_step(bucket_key, test_id, step_id, step)
+
     async def add_body_to_step(
         self, bucket_key: str, test_id: str, step_id: str, body_type: str, body_content: str
     ) -> BaseResult:
