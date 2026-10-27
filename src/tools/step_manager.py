@@ -160,6 +160,32 @@ class StepManager:
             json=inbound_step_body,
         )
 
+    async def add_condition_step(
+        self,
+        bucket_key: str,
+        test_id: str,
+        comparison: str,
+        left_value: str,
+        right_value: str,
+        steps: Optional[list] = None,
+    ) -> BaseResult:
+        condition_step_body: Dict[str, Any] = {
+            "step_type": "condition",
+            "condition_type": "start",
+            "comparison": comparison,
+            "left_value": left_value,
+            "right_value": right_value,
+        }
+        if steps is not None:
+            condition_step_body["steps"] = steps
+        return await api_request(
+            self.token,
+            "POST",
+            f"{STEPS_ENDPOINT.format(bucket_key, test_id)}",
+            result_formatter=format_steps,
+            json=condition_step_body,
+        )
+
     async def add_body_to_step(
         self, bucket_key: str, test_id: str, step_id: str, body_type: str, body_content: str
     ) -> BaseResult:
