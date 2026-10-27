@@ -70,3 +70,25 @@ class TestStep(BaseModel):
         default=None,
         description="bucket_key of the subtest to be executed. Only valid for subtest step type",
     )
+    token: Optional[str] = Field(
+        default=None, description="Inbound webhook token. Only valid for inbound step type"
+    )
+    is_dynamic_url: Optional[bool] = Field(
+        default=None,
+        alias="isDynamicUrl",
+        description="Whether the inbound webhook uses a dynamic URL. Only valid for inbound step type",
+    )
+    trigger_token: Optional[str] = Field(
+        default=None, description="Trigger token for the subtest. Only valid for subtest step type"
+    )
+    environment_id: Optional[str] = Field(
+        default=None, description="Environment id for the subtest. Only valid for subtest step type"
+    )
+    use_parent_environment: Optional[bool] = Field(
+        default=None,
+        description="Whether the subtest uses the parent test's environment. Only valid for subtest step "
+        "type",
+    )
+    params: Optional[List[Any]] = Field(
+        default=None, description="Trigger parameters for the subtest. Only valid for subtest step type"
+    )
