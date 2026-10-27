@@ -144,6 +144,125 @@ class StepManager:
             json=request_step_body,
         )
 
+    async def add_inbound_step(
+        self, bucket_key: str, test_id: str, token: Optional[str], is_dynamic_url: bool
+    ) -> BaseResult:
+        inbound_step_body = {
+            "step_type": "inbound",
+            "token": token,
+            "isDynamicUrl": bool(is_dynamic_url),
+        }
+        return await api_request(
+            self.token,
+            "POST",
+            f"{STEPS_ENDPOINT.format(bucket_key, test_id)}",
+            result_formatter=format_steps,
+            json=inbound_step_body,
+        )
+
+    async def add_condition_step(
+        self,
+        bucket_key: str,
+        test_id: str,
+        comparison: str,
+        left_value: str,
+        right_value: str,
+        steps: Optional[list] = None,
+    ) -> BaseResult:
+        condition_step_body: Dict[str, Any] = {
+            "step_type": "condition",
+            "condition_type": "start",
+            "comparison": comparison,
+            "left_value": left_value,
+            "right_value": right_value,
+        }
+        if steps is not None:
+            condition_step_body["steps"] = steps
+        return await api_request(
+            self.token,
+            "POST",
+            f"{STEPS_ENDPOINT.format(bucket_key, test_id)}",
+            result_formatter=format_steps,
+            json=condition_step_body,
+        )
+
+    async def add_conditional_loop_step(
+        self,
+        bucket_key: str,
+        test_id: str,
+        comparison: str,
+        left_value: str,
+        right_value: str,
+        steps: Optional[list] = None,
+    ) -> BaseResult:
+        loop_step_body: Dict[str, Any] = {
+            "step_type": "conditional-loop",
+            "condition_type": "start",
+            "comparison": comparison,
+            "left_value": left_value,
+            "right_value": right_value,
+        }
+        if steps is not None:
+            loop_step_body["steps"] = steps
+        return await api_request(
+            self.token,
+            "POST",
+            f"{STEPS_ENDPOINT.format(bucket_key, test_id)}",
+            result_formatter=format_steps,
+            json=loop_step_body,
+        )
+
+    async def add_subtest_step(
+        self,
+        bucket_key: str,
+        test_id: str,
+        test_uuid: str,
+        trigger_token: str,
+        environment_uuid: str,
+        subtest_bucket_key: str,
+        use_parent_environment: bool,
+        params: Optional[list] = None,
+    ) -> BaseResult:
+        subtest_step_body: Dict[str, Any] = {
+            "step_type": "subtest",
+            "test_uuid": test_uuid,
+            "trigger_token": trigger_token,
+            "environment_uuid": environment_uuid,
+            "bucket_key": subtest_bucket_key,
+            "use_parent_environment": bool(use_parent_environment),
+        }
+        if params is not None:
+            subtest_step_body["params"] = params
+        return await api_request(
+            self.token,
+            "POST",
+            f"{STEPS_ENDPOINT.format(bucket_key, test_id)}",
+            result_formatter=format_steps,
+            json=subtest_step_body,
+        )
+
+    async def update_step(
+        self, bucket_key: str, test_id: str, step_id: str, updates: Dict[str, Any]
+    ) -> BaseResult:
+        if not isinstance(updates, dict) or not updates:
+            return BaseResult(error="updates must be a non-empty object of fields to change.")
+        step = await self.read(bucket_key, test_id, step_id, result_formatter=None)
+        if not step:
+            return BaseResult(error=f"Step {step_id} not found.")
+        step.update(updates)
+        return await self._put_step(bucket_key, test_id, step_id, step)
+
+    async def reorder_steps(self, bucket_key: str, test_id: str, step_order: list) -> BaseResult:
+        if not isinstance(step_order, list) or not step_order:
+            return BaseResult(error="step_order must be a non-empty list of step ids.")
+        return await api_request(
+            self.token,
+            "PUT",
+            f"{STEPS_ENDPOINT.format(bucket_key, test_id)}",
+            result_formatter=format_steps,
+            json=step_order,
+        )
+
     async def add_body_to_step(
         self, bucket_key: str, test_id: str, step_id: str, body_type: str, body_content: str
     ) -> BaseResult:
@@ -481,6 +600,71 @@ def register(mcp, token: Optional[BzmApimToken]):
                        require a value
                     - Provide the expected value for other comparisons
                        (e.g., "200", "yourapihere.com", "application")
+        - add_inbound_step: Add an inbound (webhook) step to a test.
+            args(dict): Dictionary with the following required parameters:
+                bucket_key(str): The required parameter. The id of the bucket where the test resides.
+                test_id (str): The required parameter. The id of the test to which the inbound step will
+                 be added.
+                token (str): The required parameter. The inbound webhook token.
+                is_dynamic_url (bool): The required parameter. Whether the inbound webhook uses a dynamic
+                 URL.
+        - add_condition_step: Add a conditional-if (branching) step to a test. The branch runs its nested
+           steps only when the comparison holds. The end of the conditional block is appended automatically
+           by the server; do not add an explicit end step.
+            args(dict): Dictionary with the following required parameters:
+                bucket_key(str): The required parameter. The id of the bucket where the test resides.
+                test_id (str): The required parameter. The id of the test to which the condition step will
+                 be added.
+                comparison (str): The required parameter. The comparison operator (same set as
+                 add_assertion_to_step's assertion_comparison, e.g. 'equals', 'is_greater_than').
+                left_value (str): The required parameter. The left-hand value of the comparison (may use
+                 {{variable}} references).
+                right_value (str): The required parameter. The right-hand value of the comparison.
+                steps (list): The optional parameter. Nested steps to run inside the conditional block.
+        - add_conditional_loop_step: Add a conditional-loop (while) step to a test. The loop repeats its
+           nested steps while the comparison holds. The end of the loop block is appended automatically by
+           the server; do not add an explicit end step.
+            args(dict): Dictionary with the following required parameters:
+                bucket_key(str): The required parameter. The id of the bucket where the test resides.
+                test_id (str): The required parameter. The id of the test to which the loop step will be
+                 added.
+                comparison (str): The required parameter. The comparison operator (same set as
+                 add_condition_step's comparison).
+                left_value (str): The required parameter. The left-hand value of the comparison.
+                right_value (str): The required parameter. The right-hand value of the comparison.
+                steps (list): The optional parameter. Nested steps to run inside the loop block.
+        - add_subtest_step: Add a subtest step that triggers another test as part of this test.
+            args(dict): Dictionary with the following required parameters:
+                bucket_key(str): The required parameter. The id of the bucket where this (parent) test
+                 resides.
+                test_id (str): The required parameter. The id of the (parent) test to which the subtest
+                 step will be added.
+                test_uuid (str): The required parameter. The id of the subtest (the test to trigger).
+                trigger_token (str): The required parameter. The trigger token of the subtest.
+                environment_uuid (str): The required parameter. The id of the environment to run the
+                 subtest in.
+                subtest_bucket_key (str): The required parameter. The id of the bucket that contains the
+                 subtest (may differ from the parent test's bucket).
+                use_parent_environment (bool): The required parameter. Whether the subtest should use the
+                 parent test's environment instead of environment_uuid.
+                params (list): The optional parameter. Trigger parameters to pass to the subtest.
+        - update_step: Update any existing step by merging the given fields into it. The current step is
+           read, the provided fields are shallow-merged over it, and the full merged step is saved.
+            args(dict): Dictionary with the following required parameters:
+                bucket_key(str): The required parameter. The id of the bucket where the test resides.
+                test_id (str): The required parameter. The id of the test where the step resides.
+                step_id (str): The required parameter. The id of the step to update.
+                updates (dict): The required parameter. A non-empty object of step fields to change (e.g.
+                 {"duration": 30} for a pause step, {"url": "https://new"} for a request step).
+        - reorder_steps: Change the order of a test's steps. Pass the full ordered list of step ids; the
+           server applies the new order (max 100 steps). Known limitation: a conditional-loop block's
+           children cannot be nested under a reorder entry (the server pairs end-blocks only for
+           conditional-if); reorder every step as a flat id entry instead.
+            args(dict): Dictionary with the following required parameters:
+                bucket_key(str): The required parameter. The id of the bucket where the test resides.
+                test_id (str): The required parameter. The id of the test whose steps to reorder.
+                step_order (list): The required parameter. The full ordered list of step ids as objects,
+                 e.g. [{"id": "step_2"}, {"id": "step_1"}].
         Examples:
             - List steps: action="list", args={"bucket_key": "abc123def456", "test_id": "abc123def456"}
             - Add a GET request step: action="add_request_step",
@@ -505,6 +689,26 @@ def register(mcp, token: Optional[BzmApimToken]):
             - Add a post-response script: action="add_script_to_step",
               args={"bucket_key": "abc123def456", "test_id": "abc123def456", "step_id": "abc123def456",
                     "script": "var data = JSON.parse(response.body);", "script_type": "post"}
+            - Add an inbound step: action="add_inbound_step",
+              args={"bucket_key": "abc123def456", "test_id": "abc123def456",
+                    "token": "inbound_token_xyz", "is_dynamic_url": true}
+            - Add a conditional-if step: action="add_condition_step",
+              args={"bucket_key": "abc123def456", "test_id": "abc123def456",
+                    "comparison": "equals", "left_value": "{{status}}", "right_value": "200"}
+            - Add a conditional-loop step: action="add_conditional_loop_step",
+              args={"bucket_key": "abc123def456", "test_id": "abc123def456",
+                    "comparison": "is_greater_than", "left_value": "{{counter}}", "right_value": "10"}
+            - Add a subtest step: action="add_subtest_step",
+              args={"bucket_key": "abc123def456", "test_id": "abc123def456",
+                    "test_uuid": "sub_test_uuid", "trigger_token": "trig_abc",
+                    "environment_uuid": "env_abc", "subtest_bucket_key": "bucket_other",
+                    "use_parent_environment": false}
+            - Update a step: action="update_step",
+              args={"bucket_key": "abc123def456", "test_id": "abc123def456", "step_id": "abc123def456",
+                    "updates": {"duration": 30}}
+            - Reorder steps: action="reorder_steps",
+              args={"bucket_key": "abc123def456", "test_id": "abc123def456",
+                    "step_order": [{"id": "step_2"}, {"id": "step_1"}]}
         """,
     )
     async def steps(action: str, args: Dict[str, Any], ctx: Context) -> BaseResult:
@@ -597,6 +801,73 @@ def register(mcp, token: Optional[BzmApimToken]):
                                 args.get("assertion_comparison"),
                                 args.get("assertion_property"),
                                 args.get("assertion_value"),
+                            ),
+                        )
+                    case "add_inbound_step":
+                        return check_result_error(
+                            span,
+                            await step_manager.add_inbound_step(
+                                args["bucket_key"],
+                                args["test_id"],
+                                args.get("token"),
+                                args.get("is_dynamic_url"),
+                            ),
+                        )
+                    case "add_condition_step":
+                        return check_result_error(
+                            span,
+                            await step_manager.add_condition_step(
+                                args["bucket_key"],
+                                args["test_id"],
+                                args.get("comparison"),
+                                args.get("left_value"),
+                                args.get("right_value"),
+                                args.get("steps"),
+                            ),
+                        )
+                    case "add_conditional_loop_step":
+                        return check_result_error(
+                            span,
+                            await step_manager.add_conditional_loop_step(
+                                args["bucket_key"],
+                                args["test_id"],
+                                args.get("comparison"),
+                                args.get("left_value"),
+                                args.get("right_value"),
+                                args.get("steps"),
+                            ),
+                        )
+                    case "add_subtest_step":
+                        return check_result_error(
+                            span,
+                            await step_manager.add_subtest_step(
+                                args["bucket_key"],
+                                args["test_id"],
+                                args.get("test_uuid"),
+                                args.get("trigger_token"),
+                                args.get("environment_uuid"),
+                                args.get("subtest_bucket_key"),
+                                args.get("use_parent_environment"),
+                                args.get("params"),
+                            ),
+                        )
+                    case "update_step":
+                        return check_result_error(
+                            span,
+                            await step_manager.update_step(
+                                args["bucket_key"],
+                                args["test_id"],
+                                args["step_id"],
+                                args.get("updates"),
+                            ),
+                        )
+                    case "reorder_steps":
+                        return check_result_error(
+                            span,
+                            await step_manager.reorder_steps(
+                                args["bucket_key"],
+                                args["test_id"],
+                                args.get("step_order"),
                             ),
                         )
                     case _:
