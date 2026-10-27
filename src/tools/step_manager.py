@@ -144,6 +144,22 @@ class StepManager:
             json=request_step_body,
         )
 
+    async def add_inbound_step(
+        self, bucket_key: str, test_id: str, token: Optional[str], is_dynamic_url: bool
+    ) -> BaseResult:
+        inbound_step_body = {
+            "step_type": "inbound",
+            "token": token,
+            "isDynamicUrl": bool(is_dynamic_url),
+        }
+        return await api_request(
+            self.token,
+            "POST",
+            f"{STEPS_ENDPOINT.format(bucket_key, test_id)}",
+            result_formatter=format_steps,
+            json=inbound_step_body,
+        )
+
     async def add_body_to_step(
         self, bucket_key: str, test_id: str, step_id: str, body_type: str, body_content: str
     ) -> BaseResult:
