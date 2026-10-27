@@ -1,0 +1,117 @@
+{
+  "version": "1",
+  "ticket": "MOB-55587",
+  "repo": "mcp-bzm-apim",
+  "sources": [
+    {
+      "id": "E-001",
+      "source": "JIRA:MOB-55587:description",
+      "claim": "The ticket requires adding Inbound, conditional-if, conditional-loop, and subtest step types to blazemeter_apitest_steps."
+    },
+    {
+      "id": "E-002",
+      "source": "JIRA:MOB-55587:description",
+      "claim": "The ticket requires modifying/updating an existing test step."
+    },
+    {
+      "id": "E-003",
+      "source": "JIRA:MOB-55587:description",
+      "claim": "The ticket requires changing test step order."
+    },
+    {
+      "id": "E-010",
+      "source": "FILE:plan.md:89",
+      "claim": "The selected design adds per-step-type builders mirroring add_request_step/add_pause_step."
+    },
+    {
+      "id": "E-011",
+      "source": "FILE:plan.md:144",
+      "claim": "update_step reads the current step, merges updates, and PUTs to /steps/{step_id}."
+    },
+    {
+      "id": "E-012",
+      "source": "FILE:plan.md:161",
+      "claim": "reorder_steps PUTs a caller-supplied template_order list to /steps."
+    },
+    {
+      "id": "E-013",
+      "source": "FILE:plan.md:176",
+      "claim": "The TestStep model is extended with inbound and subtest fields to avoid dropping response data."
+    },
+    {
+      "id": "E-020",
+      "source": "FILE:../../src/tools/step_manager.py:103",
+      "claim": "add_pause_step is the existing builder analog that POSTs a flat step_type body via api_request."
+    },
+    {
+      "id": "E-021",
+      "source": "FILE:../../src/tools/step_manager.py:255",
+      "claim": "_put_step PUTs a full step dict to /steps/{step_id} via api_request."
+    },
+    {
+      "id": "E-022",
+      "source": "FILE:../../src/models/step.py:10",
+      "claim": "TestStep currently lacks inbound (token/isDynamicUrl) and several subtest fields, which Pydantic drops by default."
+    },
+    {
+      "id": "E-023",
+      "source": "FILE:../../src/formatters/step.py:6",
+      "claim": "format_steps round-trips each API step dict through TestStep.model_dump without aggregation."
+    },
+    {
+      "id": "E-030",
+      "source": "FILE:brownfield-context.md:111",
+      "claim": "The radar input wire key for the conditional-if step is 'condition' (not 'conditional'); the parser auto-appends the end block."
+    },
+    {
+      "id": "E-031",
+      "source": "FILE:brownfield-context.md:95",
+      "claim": "The subtest radar input requires test_uuid, trigger_token, environment_uuid, bucket_key, use_parent_environment; lazy validation matches the request-step precedent."
+    },
+    {
+      "id": "E-032",
+      "source": "FILE:brownfield-context.md:63",
+      "claim": "The tool reads no runtime/cache/db/queue data whose lifecycle could invalidate a read."
+    },
+    {
+      "id": "E-040",
+      "source": "FILE:tasks.md:35",
+      "claim": "T003 implements add_inbound_step in step_manager.py."
+    },
+    {
+      "id": "E-041",
+      "source": "FILE:tasks.md:45",
+      "claim": "T007 implements update_step in step_manager.py."
+    },
+    {
+      "id": "E-042",
+      "source": "FILE:tasks.md:52",
+      "claim": "T008 implements reorder_steps in step_manager.py."
+    },
+    {
+      "id": "E-043",
+      "source": "FILE:tasks.md:34",
+      "claim": "T011 extends the TestStep model with inbound and subtest fields."
+    },
+    {
+      "id": "E-050",
+      "source": "FILE:test-scenarios.md:14",
+      "claim": "test_add_inbound_step through test_add_subtest_step cover AC-1 add actions."
+    },
+    {
+      "id": "E-051",
+      "source": "FILE:test-scenarios.md:21",
+      "claim": "test_update_step covers AC-2 modify."
+    },
+    {
+      "id": "E-052",
+      "source": "FILE:test-scenarios.md:23",
+      "claim": "test_reorder_steps covers AC-3 reorder."
+    },
+    {
+      "id": "E-060",
+      "source": "FILE:plan.md:29",
+      "claim": "The Constitution Check passes with no principle violations; the architecture reuses the existing single-api_request adapter pattern."
+    }
+  ]
+}
