@@ -252,6 +252,17 @@ class StepManager:
         step.update(updates)
         return await self._put_step(bucket_key, test_id, step_id, step)
 
+    async def reorder_steps(self, bucket_key: str, test_id: str, step_order: list) -> BaseResult:
+        if not isinstance(step_order, list) or not step_order:
+            return BaseResult(error="step_order must be a non-empty list of step ids.")
+        return await api_request(
+            self.token,
+            "PUT",
+            f"{STEPS_ENDPOINT.format(bucket_key, test_id)}",
+            result_formatter=format_steps,
+            json=step_order,
+        )
+
     async def add_body_to_step(
         self, bucket_key: str, test_id: str, step_id: str, body_type: str, body_content: str
     ) -> BaseResult:
