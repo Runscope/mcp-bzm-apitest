@@ -9,15 +9,16 @@ BlazeMeter API Test MCP Server — bridges AI tools (Claude, VS Code, Cursor) to
 ## Commands
 
 ```bash
-# Install (with test deps)
-make install                # or: pip install -e ".[test]"
+# Setup (Python >= 3.11 required — pyproject requires-python; the host default
+# python must not be older. Runtime is managed with uv: uv.lock + .python-version pin 3.12)
+make install                # uv sync --extra test → creates .venv with test deps
 
-# Run tests
+# Run tests (all make targets resolve tools from .venv when present, PATH otherwise)
 make test                   # Full suite with coverage
 make test-fast              # Stop on first failure (-x)
 make test-unit              # Unit tests only (excludes @pytest.mark.integration)
 make test-integration       # Integration tests only
-pytest tests/test_api_client.py::TestApiClient::test_api_request_success -v  # Single test
+.venv/bin/python -m pytest tests/test_api_client.py::TestApiClient::test_api_request_success -v  # Single test
 
 # Lint & format
 make lint                   # flake8 + black --check + isort --check-only
@@ -71,6 +72,7 @@ main.py → FastMCP server → server.py:register_tools() → 8 Tool Managers
 - Mocking with `unittest.mock` (Mock, AsyncMock) — API calls are mocked, not live
 - Markers: `@pytest.mark.integration`, `@pytest.mark.unit`, `@pytest.mark.slow`
 - Coverage targets `src/` only
+- All `make` test/lint targets resolve tools from `.venv` when present (PATH fallback); run `make install` once to create it
 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,

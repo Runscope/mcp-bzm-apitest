@@ -1,10 +1,16 @@
 .PHONY: help install test test-fast test-unit test-integration test-coverage test-watch clean lint format
 
+# Tool resolution: prefer the repo's .venv (created by `make install` via uv);
+# fall back to PATH so CI and already-activated environments keep working.
+# Bare `pytest` broke on cold hosts (host python 3.9 vs requires-python >=3.11).
+PYTHON := $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
+PYTEST := $(PYTHON) -m pytest
+
 help:
 	@echo "MCP BlazeMeter API Test - Development Commands"
 	@echo ""
 	@echo "Available commands:"
-	@echo "  make install          - Install package with test dependencies"
+	@echo "  make install          - Create .venv and install package with test dependencies (uv)"
 	@echo "  make test             - Run all tests with coverage"
 	@echo "  make test-fast        - Run tests quickly (stop on first failure)"
 	@echo "  make test-unit        - Run only unit tests"
@@ -16,22 +22,23 @@ help:
 	@echo "  make clean            - Clean up test artifacts"
 
 install:
-	pip install -e ".[test]"
+	@command -v uv >/dev/null 2>&1 || { echo "uv not installed. Install from https://docs.astral.sh/uv/ then re-run, or manually: python3.11 -m venv .venv && .venv/bin/pip install -e '.[test]'"; exit 1; }
+	uv sync --extra test
 
 test:
-	pytest -v --cov=src --cov-report=term --cov-report=html
+	$(PYTEST) -v --cov=src --cov-report=term --cov-report=html
 
 test-fast:
-	pytest -v -x
+	$(PYTEST) -v -x
 
 test-unit:
-	pytest -v -m "not integration"
+	$(PYTEST) -v -m "not integration"
 
 test-integration:
-	pytest -v -m integration tests/test_integration.py
+	$(PYTEST) -v -m integration tests/test_integration.py
 
 test-coverage:
-	pytest --cov=src --cov-report=html --cov-report=term-missing --cov-report=xml
+	$(PYTEST) --cov=src --cov-report=html --cov-report=term-missing --cov-report=xml
 	@echo ""
 	@echo "Coverage report generated in htmlcov/index.html"
 
@@ -40,13 +47,13 @@ test-watch:
 	pytest-watch
 
 lint:
-	flake8 src --max-line-length=108
-	black --check src
-	isort --check-only src
+	$(PYTHON) -m flake8 src --max-line-length=108
+	$(PYTHON) -m black --check src --target-version py311
+	$(PYTHON) -m isort --check-only src
 
 format:
-	black src
-	isort src
+	$(PYTHON) -m black src --target-version py311
+	$(PYTHON) -m isort src
 
 clean:
 	rm -rf .pytest_cache
