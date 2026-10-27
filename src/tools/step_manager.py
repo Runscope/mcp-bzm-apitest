@@ -212,6 +212,35 @@ class StepManager:
             json=loop_step_body,
         )
 
+    async def add_subtest_step(
+        self,
+        bucket_key: str,
+        test_id: str,
+        test_uuid: str,
+        trigger_token: str,
+        environment_uuid: str,
+        subtest_bucket_key: str,
+        use_parent_environment: bool,
+        params: Optional[list] = None,
+    ) -> BaseResult:
+        subtest_step_body: Dict[str, Any] = {
+            "step_type": "subtest",
+            "test_uuid": test_uuid,
+            "trigger_token": trigger_token,
+            "environment_uuid": environment_uuid,
+            "bucket_key": subtest_bucket_key,
+            "use_parent_environment": bool(use_parent_environment),
+        }
+        if params is not None:
+            subtest_step_body["params"] = params
+        return await api_request(
+            self.token,
+            "POST",
+            f"{STEPS_ENDPOINT.format(bucket_key, test_id)}",
+            result_formatter=format_steps,
+            json=subtest_step_body,
+        )
+
     async def add_body_to_step(
         self, bucket_key: str, test_id: str, step_id: str, body_type: str, body_content: str
     ) -> BaseResult:
