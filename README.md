@@ -233,7 +233,7 @@ The BlazeMeter API Test MCP Server provides the following tools for interacting 
 - `blazemeter_apitest_buckets`: List all the buckets, Read bucket details, and Create a new bucket.
 - `blazemeter_apitest_tests`: List all API tests within a bucket, Read test details, Create a new API test, and Get the test metrics.
 - `blazemeter_apitest_schedules`: List all schedules within a test, Read schedule details, and Create a new schedule.
-- `blazemeter_apitest_steps`: List all steps within a test, Read test step details, Add a new Pause or Request step (with URL, Method, Headers, and Note), and add a Body, Assertion, Header, extraction Variable, or pre/post Script to an existing request step.
+- `blazemeter_apitest_steps`: List all steps within a test, Read test step details, Add a new Pause, Request, Inbound (callback), Subtest, Conditional-If, or Conditional-Loop step, add a Body, Assertion, Header, extraction Variable, or pre/post Script to an existing request step, Update an existing step's fields, and Reorder the test's steps. Reordering auto-discovers the hidden end-block templates that conditional blocks create and places them correctly — pass only the visible step ids.
 - `blazemeter_apitest_environments`: List all test/shared environments, Read test/shared environment details and update test/shared environments.
 - `blazemeter_apitest_results`: Execute an individual test or all bucket-level tests, List last 50 test results, and Read test result and bucket-level result details.
 - `blazemeter_apitest_team_usage`: Fetch the total requests usage of a team.

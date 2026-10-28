@@ -10,6 +10,7 @@ validity checks (S_HARNESS_1, S_HARNESS_2) that prove the invocation/
 assertion pattern against the existing add_pause_step/add_request_step
 analogs before trusting it for the new, not-yet-implemented builders.
 """
+
 import httpx
 import pytest
 from unittest.mock import patch
@@ -324,9 +325,10 @@ class TestUpdateStep:
     async def test_update_step(self, mock_token, mock_context):
         """Covers T007, T107. Scenario: update_step reads the current step, merges updates, PUTs the full step dict."""
         manager = StepManager(mock_token, mock_context)
-        with patch.object(manager, "read") as mock_read, patch(
-            "src.tools.step_manager.api_request"
-        ) as mock_api:
+        with (
+            patch.object(manager, "read") as mock_read,
+            patch("src.tools.step_manager.api_request") as mock_api,
+        ):
             mock_read.return_value = {
                 "id": "step_123",
                 "step_type": "pause",
@@ -336,9 +338,7 @@ class TestUpdateStep:
                 result=[{"id": "step_123", "step_type": "pause", "duration": 30}], total=1
             )
 
-            result = await manager.update_step(
-                "bucket_abc", "test_123", "step_123", {"duration": 30}
-            )
+            result = await manager.update_step("bucket_abc", "test_123", "step_123", {"duration": 30})
 
             assert result.error is None
             put_payload = mock_api.call_args.kwargs["json"]
@@ -352,9 +352,10 @@ class TestUpdateStep:
     async def test_update_step_unknown_id(self, mock_token, mock_context):
         """Covers T107. Scenario: update_step on an unknown step_id yields a BaseResult(error=...) not-found."""
         manager = StepManager(mock_token, mock_context)
-        with patch.object(manager, "read") as mock_read, patch(
-            "src.tools.step_manager.api_request"
-        ) as mock_api:
+        with (
+            patch.object(manager, "read") as mock_read,
+            patch("src.tools.step_manager.api_request") as mock_api,
+        ):
             mock_read.return_value = {}
 
             result = await manager.update_step(
@@ -404,6 +405,164 @@ class TestReorderSteps:
             mock_api.assert_not_called()
 
 
+def _locate_error(template_id: str) -> httpx.HTTPStatusError:
+    """A 400 whose body is the reorder API's matches-all-templates complaint (MOB-55673)."""
+    request = httpx.Request("PUT", "https://api.runscope.com/buckets/b/tests/t/steps")
+    response = httpx.Response(
+        400,
+        text='{"data": {}, "meta": {"status": "error"}, "error": {"error": '
+        f'"Must provide a list of template ids that matches all templates in the test. '
+        f'Unable to locate template {template_id} in updated list"}}}}',
+        request=request,
+    )
+    return httpx.HTTPStatusError("400 error", request=request, response=response)
+
+
+@pytest.mark.asyncio
+class TestReorderHiddenEndblocks:
+    """MOB-55673: conditional blocks carry a hidden end-block companion template that
+    GET /steps never returns but the reorder API requires. reorder_steps discovers
+    the missing ids from the API's own 400 and inserts each one immediately after
+    its owning block (end-position placement would nest the following steps inside
+    the block — verified live), bounded."""
+
+    UUID1 = "ea3588fa-19c4-4efe-ab48-df36b26ea2dd"
+    UUID2 = "c3135c57-de80-4085-ad10-54b389bb2696"
+
+    # The visible listing reorder_steps fetches first: one request step, one
+    # condition block, one pause. blocks = [step_2] (the condition).
+    CURRENT = BaseResult(
+        result=[
+            {"id": "step_1", "step_type": "request"},
+            {"id": "step_2", "step_type": "condition"},
+            {"id": "33333333-3333-4333-8333-333333333333", "step_type": "pause"},
+            {"id": "step_4", "step_type": "conditional-loop"},
+        ],
+        total=4,
+    )
+
+    @staticmethod
+    def _puts(mock_api):
+        return [c for c in mock_api.await_args_list if c.args[1] == "PUT"]
+
+    async def test_reorder_two_phase_discovery_and_placement(self, mock_token, mock_context):
+        """Scenario: two blocks, two hidden ends. Phase A appends the revealed ids at
+        the end until the PUT is accepted; phase B re-PUTs once with each end placed
+        immediately after its owning block (reveal order pairs with block order)."""
+        manager = StepManager(mock_token, mock_context)
+        with patch("src.tools.step_manager.api_request") as mock_api:
+            mock_api.side_effect = [
+                self.CURRENT,
+                _locate_error(self.UUID1),   # phase A PUT #1: 400
+                _locate_error(self.UUID2),   # phase A PUT #2: 400
+                BaseResult(result=[{"id": "ok_phase_a"}], total=1),  # phase A PUT #3: 200
+                BaseResult(result=[{"id": "ok_phase_b"}], total=1),  # phase B PUT #4: 200
+            ]
+            result = await manager.reorder_steps(
+                "bucket_abc", "test_123",
+                [{"id": "step_4"}, {"id": "step_1"}, {"id": "step_2"},
+                 {"id": "33333333-3333-4333-8333-333333333333"}],
+            )
+
+            assert result.error is None
+            puts = self._puts(mock_api)
+            assert len(puts) == 4
+            # Phase A's accepted payload had the ends appended at the end.
+            assert puts[2].kwargs["json"][-1] == {"id": self.UUID2}
+            # Phase B's payload places each end right after its owning block:
+            # UUID1 pairs with the condition (step_2), UUID2 with the loop (step_4).
+            assert puts[3].kwargs["json"] == [
+                {"id": "step_4"}, {"id": self.UUID2},
+                {"id": "step_1"},
+                {"id": "step_2"}, {"id": self.UUID1},
+                {"id": "33333333-3333-4333-8333-333333333333"},
+            ]
+            assert result.info and "2" in " ".join(result.info) and self.UUID1 in " ".join(result.info)
+
+    async def test_reorder_phase_b_failure_warns_but_succeeds(self, mock_token, mock_context):
+        """Scenario: phase A applies, phase B's corrective PUT 400s — the applied order
+        stands, reported with a warning instead of failing the whole action."""
+        manager = StepManager(mock_token, mock_context)
+        with patch("src.tools.step_manager.api_request") as mock_api:
+            mock_api.side_effect = [
+                self.CURRENT,
+                _locate_error(self.UUID1),   # phase A PUT #1: 400
+                BaseResult(result=[{"id": "ok_phase_a"}], total=1),  # phase A PUT #2: 200
+                _locate_error(self.UUID1),   # phase B PUT: 400 (API unhappy with placement)
+            ]
+            result = await manager.reorder_steps(
+                "bucket_abc", "test_123", [{"id": "step_1"}, {"id": "step_2"}]
+            )
+
+            assert result.error is None  # phase A's reorder stands
+            assert result.warning and "could not be structurally placed" in " ".join(result.warning)
+            assert result.info and self.UUID1 in " ".join(result.info)
+
+    async def test_reorder_rejects_missing_visible_step(self, mock_token, mock_context):
+        """Scenario: the API reveals a VISIBLE step the caller omitted — targeted error, not pairing."""
+        manager = StepManager(mock_token, mock_context)
+        with patch("src.tools.step_manager.api_request") as mock_api:
+            mock_api.side_effect = [self.CURRENT, _locate_error("33333333-3333-4333-8333-333333333333")]
+            result = await manager.reorder_steps(
+                "bucket_abc", "test_123", [{"id": "step_1"}, {"id": "step_2"}]
+            )
+
+            assert result.error is not None and "missing from your step_order" in result.error
+            assert len(self._puts(mock_api)) == 1
+
+    async def test_reorder_surfaces_actionable_error_on_unrelated_400(self, mock_token, mock_context):
+        """Scenario: a 400 that does not match the reveal pattern returns a targeted error, not the generic one."""
+        manager = StepManager(mock_token, mock_context)
+        with patch("src.tools.step_manager.api_request") as mock_api:
+            request = httpx.Request("PUT", "https://api.runscope.com/x")
+            response = httpx.Response(400, text='{"error": "different problem"}', request=request)
+            mock_api.side_effect = [
+                self.CURRENT,
+                httpx.HTTPStatusError("400", request=request, response=response),
+            ]
+            result = await manager.reorder_steps("bucket_abc", "test_123", [{"id": "step_1"}])
+
+            assert result.error is not None and "hidden end-block" in result.error.lower()
+            assert len(self._puts(mock_api)) == 1
+
+    async def test_reorder_stops_when_api_keeps_requiring_known_template(self, mock_token, mock_context):
+        """Scenario: the API names a template already in the list — inconsistent template set, stop."""
+        manager = StepManager(mock_token, mock_context)
+        with patch("src.tools.step_manager.api_request") as mock_api:
+            mock_api.side_effect = [self.CURRENT, _locate_error(self.UUID1)]
+            result = await manager.reorder_steps(
+                "bucket_abc", "test_123", [{"id": "step_1"}, {"id": self.UUID1}]
+            )
+
+            assert result.error is not None and "inconsistent" in result.error
+            assert len(self._puts(mock_api)) == 1
+
+    async def test_reorder_bounded_after_too_many_reveals(self, mock_token, mock_context):
+        """Scenario: more distinct hidden ids than the cap — refuse instead of looping forever."""
+        manager = StepManager(mock_token, mock_context)
+        with patch("src.tools.step_manager.api_request") as mock_api:
+            mock_api.side_effect = [self.CURRENT] + [
+                _locate_error(f"{i:08x}-0000-4000-8000-{i:012x}") for i in range(20)
+            ]
+            result = await manager.reorder_steps("bucket_abc", "test_123", [{"id": "step_1"}])
+
+            assert result.error is not None and "refusing" in result.error
+            assert len(self._puts(mock_api)) <= 14  # 12 reveals + repeat/idempotence attempts
+
+    async def test_reorder_normalizes_bare_id_strings(self, mock_token, mock_context):
+        """Scenario: a caller passing bare id strings still sends the documented flat objects."""
+        manager = StepManager(mock_token, mock_context)
+        with patch("src.tools.step_manager.api_request") as mock_api:
+            mock_api.side_effect = [
+                self.CURRENT,
+                BaseResult(result=[{"id": "step_2"}], total=1),
+            ]
+            result = await manager.reorder_steps("bucket_abc", "test_123", ["step_2", "step_1"])
+
+            assert result.error is None
+            assert self._puts(mock_api)[-1].kwargs["json"] == [{"id": "step_2"}, {"id": "step_1"}]
+
+
 @pytest.mark.asyncio
 class TestStepsDispatchNewActions:
     """S12 (FR-008). Covers T009, T109."""
@@ -450,9 +609,7 @@ class TestNewActionsErrorHandling:
             mock_api.side_effect = httpx.HTTPStatusError(
                 "500 Internal Server Error",
                 request=httpx.Request("POST", "https://api.example.com"),
-                response=httpx.Response(
-                    500, request=httpx.Request("POST", "https://api.example.com")
-                ),
+                response=httpx.Response(500, request=httpx.Request("POST", "https://api.example.com")),
             )
             tool_fn = mcp._tool_manager._tools[
                 [n for n in mcp._tool_manager._tools if n.endswith("_steps")][0]
