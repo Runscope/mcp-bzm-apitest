@@ -283,105 +283,149 @@ class StepManager:
         current = await self._current_steps(bucket_key, test_id)
         if isinstance(current, BaseResult):  # the listing itself failed
             return current
+        visible_ids, blocks = self._reorder_bookkeeping(current)
+        # Phase A — discover the complete template set (see
+        # _discover_hidden_templates); the order it applies is repaired by phase B.
+        result, appended = await self._discover_hidden_templates(endpoint, payload, visible_ids)
+        if result.error:
+            return result
+        # Phase B — place the discovered end-blocks correctly (see
+        # _apply_end_block_order).
+        return await self._apply_end_block_order(endpoint, step_order, appended, blocks, result)
+
+    @staticmethod
+    def _reorder_bookkeeping(current: list):
+        """(visible step ids, conditional-block ids) of the test, in current visible order."""
         visible_ids = {s.get("id") for s in current}
         blocks = [s.get("id") for s in current if s.get("step_type") in ("condition", "conditional-loop")]
-        # Phase A — discover the complete template set. Append each revealed id
-        # AT THE END (verified live: end-position appends keep the reveals flowing;
-        # inserting a partial end-block mid-list makes the API's validation error
-        # out on unrelated present ids). The order this phase applies is repaired
-        # by phase B in the same call.
+        return visible_ids, blocks
+
+    async def _discover_hidden_templates(self, endpoint: str, payload: list, visible_ids: set):
+        """Phase A — discover the complete template set. Append each revealed id
+        AT THE END (verified live: end-position appends keep the reveals flowing;
+        inserting a partial end-block mid-list makes the API's validation error
+        out on unrelated present ids). Returns (result, revealed ids); result.error
+        is set when discovery cannot complete.
+        """
         appended: list = []
-        result: BaseResult
         for _ in range(REORDER_MAX_HIDDEN_TEMPLATES + 1):
             try:
-                result = await api_request(
-                    self.token,
-                    "PUT",
-                    endpoint,
-                    result_formatter=format_steps,
-                    json=payload,
+                return (
+                    await api_request(
+                        self.token,
+                        "PUT",
+                        endpoint,
+                        result_formatter=format_steps,
+                        json=payload,
+                    ),
+                    appended,
                 )
-                break
             except httpx.HTTPStatusError as e:
                 if e.response.status_code != 400:
                     raise
                 match = REORDER_TEMPLATE_RE.search(e.response.text or "")
                 if not match:
-                    return BaseResult(
-                        error="The API rejected the new step order. Hidden end-block templates "
-                        "(companions of conditional blocks) may exist that this tool "
-                        "could not discover automatically. Report at "
-                        "https://github.com/Runscope/mcp-bzm-apitest/issues",
-                        hint=[
-                            "Verify every step id belongs to this test and the list is "
-                            "complete for the visible steps."
-                        ],
+                    return (
+                        BaseResult(
+                            error="The API rejected the new step order. Hidden end-block templates "
+                            "(companions of conditional blocks) may exist that this tool "
+                            "could not discover automatically. Report at "
+                            "https://github.com/Runscope/mcp-bzm-apitest/issues",
+                            hint=[
+                                "Verify every step id belongs to this test and the list is "
+                                "complete for the visible steps."
+                            ],
+                        ),
+                        appended,
                     )
                 revealed = match.group(1)
                 if any(entry.get("id") == revealed for entry in payload):
-                    return BaseResult(
-                        error=f"The API keeps requiring template {revealed} although it is "
-                        f"already in the list — the test's template set is inconsistent. "
-                        f"Report at https://github.com/Runscope/mcp-bzm-apitest/issues"
+                    return (
+                        BaseResult(
+                            error=f"The API keeps requiring template {revealed} although it is "
+                            f"already in the list — the test's template set is inconsistent. "
+                            f"Report at https://github.com/Runscope/mcp-bzm-apitest/issues"
+                        ),
+                        appended,
                     )
                 if revealed in visible_ids:
-                    return BaseResult(
-                        error=f"Step {revealed} belongs to this test but is missing from your "
-                        f"step_order — include every visible step id, not just the ones you "
-                        f"want to move.",
-                        hint=["The API requires the FULL ordered list of the test's steps."],
+                    return (
+                        BaseResult(
+                            error=f"Step {revealed} belongs to this test but is missing from your "
+                            f"step_order — include every visible step id, not just the ones you "
+                            f"want to move.",
+                            hint=["The API requires the FULL ordered list of the test's steps."],
+                        ),
+                        appended,
                     )
                 payload = payload + [{"id": revealed}]
                 appended.append(revealed)
-        else:
-            return BaseResult(
+        return (
+            BaseResult(
                 error=f"More than {REORDER_MAX_HIDDEN_TEMPLATES} hidden template ids required by the "
                 f"API — refusing to continue. Report at "
                 f"https://github.com/Runscope/mcp-bzm-apitest/issues"
-            )
+            ),
+            appended,
+        )
 
-        # Phase B — place the discovered end-blocks correctly. Phase A applied the
-        # user's order with the hidden ids appended at the end, which nests every
-        # step after a block INSIDE that block. Re-PUT once with each hidden id
-        # inserted immediately after its owning block (k-th revealed id pairs with
-        # the k-th block in the pre-reorder visible order); surplus ids (orphans of
-        # deleted blocks) stay at the end, where they are no-ops.
-        if appended and blocks:
-            placed = [{"id": entry} if isinstance(entry, str) else entry for entry in step_order]
-            seen: list = []
-            for revealed in appended:
-                placed = self._insert_end_block(placed, revealed, blocks, seen)
-                seen.append(revealed)
-            try:
-                result = await api_request(
-                    self.token,
-                    "PUT",
-                    endpoint,
-                    result_formatter=format_steps,
-                    json=placed,
-                )
-            except httpx.HTTPStatusError as e:
-                if e.response.status_code != 400:
-                    raise
-                # Phase A's applied order stands (this 400 did not apply); report it
-                # with a warning instead of failing the whole action.
-                result.warning = [
-                    f"Reordered, but the hidden end-block ids {', '.join(appended)} could not be "
-                    f"structurally placed after their blocks — they sit at the end of the step "
-                    f"list, which may nest later steps inside a conditional block. Verify the "
-                    f"test's step layout and re-run reorder_steps. (API: {e.response.text[:150]})"
-                ]
-                result.info = [
-                    f"Auto-discovered {len(appended)} hidden end-block template id(s) required "
-                    f"by the API: {', '.join(appended)}"
-                ]
-                return result
+    async def _apply_end_block_order(
+        self, endpoint: str, step_order: list, appended: list, blocks: list, result: BaseResult
+    ) -> BaseResult:
+        """Phase B — place the discovered end-blocks correctly. Phase A applied the
+        user's order with the hidden ids appended at the end, which nests every
+        step after a block INSIDE that block. Re-PUT once with each hidden id
+        inserted immediately after its owning block (k-th revealed id pairs with
+        the k-th block in the pre-reorder visible order); surplus ids (orphans of
+        deleted blocks) stay at the end, where they are no-ops.
+        """
+        if not (appended and blocks):
+            return self._with_discovery_info(result, step_order, appended)
+        placed = [{"id": entry} if isinstance(entry, str) else entry for entry in step_order]
+        seen: list = []
+        for revealed in appended:
+            placed = self._insert_end_block(placed, revealed, blocks, seen)
+            seen.append(revealed)
+        try:
+            result = await api_request(
+                self.token,
+                "PUT",
+                endpoint,
+                result_formatter=format_steps,
+                json=placed,
+            )
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code != 400:
+                raise
+            # Phase A's applied order stands (this 400 did not apply); report it
+            # with a warning instead of failing the whole action.
+            return self._unplaced_end_block_result(result, appended, e.response.text)
+        return self._with_discovery_info(result, step_order, appended)
+
+    @staticmethod
+    def _with_discovery_info(result: BaseResult, step_order: list, appended: list) -> BaseResult:
+        """Attach the auto-discovery note to a successful reorder result."""
         if appended:
             result.info = [
                 f"Reordered {len(step_order)} step(s); auto-discovered and placed "
                 f"{len(appended)} hidden end-block template id(s) required by the API: "
                 f"{', '.join(appended)}"
             ]
+        return result
+
+    @staticmethod
+    def _unplaced_end_block_result(result: BaseResult, appended: list, response_text: str) -> BaseResult:
+        """Report that phase B's corrective PUT failed; phase A's order stands."""
+        result.warning = [
+            f"Reordered, but the hidden end-block ids {', '.join(appended)} could not be "
+            f"structurally placed after their blocks — they sit at the end of the step "
+            f"list, which may nest later steps inside a conditional block. Verify the "
+            f"test's step layout and re-run reorder_steps. (API: {response_text[:150]})"
+        ]
+        result.info = [
+            f"Auto-discovered {len(appended)} hidden end-block template id(s) required "
+            f"by the API: {', '.join(appended)}"
+        ]
         return result
 
     async def _current_steps(self, bucket_key: str, test_id: str):
